@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -20,22 +19,18 @@ namespace Catsfract
 
         private readonly CanvasDevice device;
         private CanvasRenderTarget offscreen;
-        private Windows.UI.Color[] offscreenPoints;
-        private Windows.UI.Color backgroundColor;
-        private int maxIterations;
         private Point originComplex = new Point(400, 400);
         private double zoom = 300;
+        private MandelbrotSet mandelbrotSet;
+        private CanvasPoint canvasPoint;
         
         public MainPage()
         {
             this.InitializeComponent();
             device = CanvasDevice.GetSharedDevice();
-
-            maxIterations = 100;
-
-            backgroundColor = Colors.Black;
         }
 
+        
         private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
             args.DrawingSession.DrawImage(offscreen);
@@ -43,10 +38,17 @@ namespace Catsfract
 
         private void CanOnScreen_SizeChanged(object sender, SizeChangedEventArgs args)
         {
-            int pointsCount = Convert.ToInt32(args.NewSize.Width * args.NewSize.Height);
+            if (canvasPoint == null)
+            {
+                canvasPoint = new CanvasPoint(args.NewSize, originComplex, zoom);
+                mandelbrotSet = new MandelbrotSet(canvasPoint);
+            }
+            else
+            {
+                canvasPoint.SizeCanvas = args.NewSize;
+                mandelbrotSet.CanvasPoint = canvasPoint;
+            }
 
-            offscreenPoints = null;
-            offscreenPoints = new Windows.UI.Color[pointsCount];
             offscreen?.Dispose();
             offscreen = new CanvasRenderTarget(
                 device, 
@@ -55,41 +57,9 @@ namespace Catsfract
                 ((CanvasControl)sender).Dpi
             );
 
-            CanvasPoint canvasPoint = new CanvasPoint(args.NewSize, originComplex, zoom);
+            mandelbrotSet.Calculate();
 
-            for (int pointIndex = 0; pointIndex < pointsCount; pointIndex++)
-            {
-                Complex c = canvasPoint.ComplexFromIndex(pointIndex);
-
-                offscreenPoints[pointIndex] = backgroundColor;
-                if (Diverging(c.Real, c.Imaginary, out int speed)) offscreenPoints[pointIndex] = ColorScale.Viridis[maxIterations - speed].ARGBValue;
-
-            }
-
-            offscreen.SetPixelColors(offscreenPoints);
-        }
-
-        private Boolean Diverging(double ca, double cb, out int speed)
-        {
-            int n = 0;
-            double za = 0;
-            double zb = 0;
-
-            while (n < maxIterations)
-            {
-                double zasq = za * za;
-                double zbsq = zb * zb;
-
-                zb = 2 * za * zb + cb;
-                za = zasq - zbsq + ca;
-
-                if (zasq + zbsq > 4) break;
-                n++;
-            }
-
-            speed = Convert.ToInt32(((double)maxIterations - (double)n) / (double)maxIterations * 100);
-
-            return (n != maxIterations);
+            offscreen.SetPixelColors(mandelbrotSet.Points);
         }
 
         // Public implementation of Dispose pattern callable by consumers.
@@ -113,6 +83,5 @@ namespace Catsfract
 
             disposed = true;
         }
-
     }
 }

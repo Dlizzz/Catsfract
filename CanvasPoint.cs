@@ -11,6 +11,13 @@ namespace Catsfract
         private Point _OriginComplex;
         private double _zoom;
 
+        public CanvasPoint(Size sizeCanvas, Point originComplex, double zoom)
+        {
+            SizeCanvas = sizeCanvas;
+            OriginComplex = originComplex;
+            Zoom = zoom;
+        }
+
         public Size SizeCanvas 
         { 
             get => _sizeCanvas; 
@@ -41,11 +48,9 @@ namespace Catsfract
             }
         }
 
-        public CanvasPoint(Size sizeCanvas, Point originComplex, double zoom)
+        public int PointsCount
         {
-            SizeCanvas = sizeCanvas;
-            OriginComplex = originComplex;
-            Zoom = zoom;
+            get => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
         }
 
         public int IndexFromComplex(Complex c)
