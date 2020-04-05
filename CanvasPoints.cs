@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
+using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.ApplicationModel.Resources;
 using Microsoft.Graphics.Canvas;
@@ -13,6 +14,8 @@ namespace Catsfract
     abstract class CanvasPoints: IDisposable
     {
         private bool disposed = false;
+        private const double MOUSE_WHEEL = 120;
+        private readonly double wheelMagnifierRatio = 0.1;
         protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
 
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
@@ -105,6 +108,8 @@ namespace Catsfract
         }
 
         public Point CanvasFromComplex(Complex c) => new Point(_zoom * c.Real + _OriginComplexPlan.X, -_zoom * c.Imaginary + _OriginComplexPlan.Y);
+
+        public double ZoomFromMouseWheelDelta(PointerPointProperties pointerPointProperties) => _zoom * (1 + pointerPointProperties.MouseWheelDelta / MOUSE_WHEEL * wheelMagnifierRatio);
 
         // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()

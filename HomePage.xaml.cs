@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Globalization;
+using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 using Windows.Foundation;
-using Windows.ApplicationModel.Resources;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 
@@ -27,7 +30,7 @@ namespace Catsfract
         #endregion
 
         #region CanOnScreen
-        private void CanOnScreen_CreateResources(CanvasControl sender, Microsoft.Graphics.Canvas.UI.CanvasCreateResourcesEventArgs args)
+        private void CanOnScreen_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
             Size size = new Size(sender.ActualWidth, sender.ActualHeight);
 
@@ -48,7 +51,7 @@ namespace Catsfract
             if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas) mandelbrotSet.SizeCanvas = args.NewSize;
         }
 
-        private void CanOnScreen_DoubleTapped(object sender, Windows.UI.Xaml.Input.DoubleTappedRoutedEventArgs args)
+        private void CanOnScreen_DoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
         {
             if (((CanvasControl)sender).ReadyToDraw)
             {
@@ -56,8 +59,25 @@ namespace Catsfract
                 ((CanvasControl)sender).Invalidate();
             }
         }
+
+#pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
+        private void CanOnScreen_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs args)
+#pragma warning restore CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
+        {
+            Debug.WriteLine(args.Delta.ToString());
+        }
+
+        private void CanOnScreen_PointerWheelChanged(object sender, PointerRoutedEventArgs args)
+        {
+            PointerPoint pointerPoint = args.GetCurrentPoint((CanvasControl)sender);
+
+            mandelbrotSet.Zoom = mandelbrotSet.ZoomFromMouseWheelDelta(pointerPoint.Properties);
+
+            ((CanvasControl)sender).Invalidate();
+        }
+
         #endregion
-        
+
         #region Dispose
         private bool disposed = false;
 
@@ -82,5 +102,6 @@ namespace Catsfract
             disposed = true;
         }
         #endregion
+
     }
 }

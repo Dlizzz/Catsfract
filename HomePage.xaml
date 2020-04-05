@@ -14,6 +14,6 @@
             <ColumnDefinition Width="200"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <canvas:CanvasControl x:Name="CanOnScreen" ClearColor="Black" Grid.Column="1" SizeChanged="CanOnScreen_SizeChanged" CreateResources="CanOnScreen_CreateResources" DoubleTapped="CanOnScreen_DoubleTapped" Draw="CanOnScreen_Draw"/>
+        <canvas:CanvasControl x:Name="CanOnScreen" ClearColor="Black" Grid.Column="1" SizeChanged="CanOnScreen_SizeChanged" CreateResources="CanOnScreen_CreateResources" DoubleTapped="CanOnScreen_DoubleTapped" Draw="CanOnScreen_Draw" ManipulationMode="All" ManipulationDelta="CanOnScreen_ManipulationDelta" PointerWheelChanged="CanOnScreen_PointerWheelChanged"/>
     </Grid>
 </Page>
