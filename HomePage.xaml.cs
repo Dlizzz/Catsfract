@@ -20,9 +20,8 @@ namespace Catsfract
         private readonly CanvasDevice device;
         private CanvasRenderTarget offscreen;
         private Point originComplex = new Point(400, 400);
-        private double zoom = 300;
+        private double zoom = 500;
         private MandelbrotSet mandelbrotSet;
-        private CanvasPoint canvasPoint;
         
         public MainPage()
         {
@@ -30,32 +29,24 @@ namespace Catsfract
             device = CanvasDevice.GetSharedDevice();
         }
 
-        
-        private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args)
-        {
-            args.DrawingSession.DrawImage(offscreen);
-        }
+        private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args) => args.DrawingSession.DrawImage(offscreen);
 
         private void CanOnScreen_SizeChanged(object sender, SizeChangedEventArgs args)
         {
-            if (canvasPoint == null)
+            if (mandelbrotSet == null)
             {
-                canvasPoint = new CanvasPoint(args.NewSize, originComplex, zoom);
-                mandelbrotSet = new MandelbrotSet(canvasPoint);
+                mandelbrotSet = new MandelbrotSet(args.NewSize, originComplex, zoom);
             }
             else
             {
-                canvasPoint.SizeCanvas = args.NewSize;
-                mandelbrotSet.CanvasPoint = canvasPoint;
+                mandelbrotSet.SizeCanvas = args.NewSize;
             }
 
             offscreen?.Dispose();
-            offscreen = new CanvasRenderTarget(
-                device, 
-                Convert.ToSingle(args.NewSize.Width), 
-                Convert.ToSingle(args.NewSize.Height), 
-                ((CanvasControl)sender).Dpi
-            );
+            float width = Convert.ToSingle(args.NewSize.Width);
+            float height = Convert.ToSingle(args.NewSize.Height);
+            float dpi = ((CanvasControl)sender).Dpi;
+            offscreen = new CanvasRenderTarget(device, width, height, dpi);
 
             mandelbrotSet.Calculate();
 

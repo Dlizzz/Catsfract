@@ -1,49 +1,29 @@
 ﻿using System;
-using Windows.UI;
 using System.Numerics;
-
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Windows.UI;
+using Windows.Foundation;
 
 namespace Catsfract
 {
-    class MandelbrotSet
+    class MandelbrotSet: CanvasPoints
     {
         private int _threshold;
-        private CanvasPoint _canvasPoint;
 
-        public MandelbrotSet(CanvasPoint canvasPoint, Color inSetColor, int threshold = 100)
+        public MandelbrotSet(Size sizeCanvas, Point originComplex, double zoom, Color inSetColor, int threshold = 100): base(sizeCanvas, originComplex, zoom)
         {
             if (inSetColor == null) throw new ArgumentNullException(nameof(inSetColor));
 
-            CanvasPoint = canvasPoint ?? throw new ArgumentNullException(nameof(canvasPoint));
             InSetColor = inSetColor;
             Threshold = threshold;
         }
 
-        public MandelbrotSet(CanvasPoint canvasPoint)
+        public MandelbrotSet(Size sizeCanvas, Point originComplex, double zoom) : base(sizeCanvas, originComplex, zoom)
         {
-            CanvasPoint = canvasPoint ?? throw new ArgumentNullException(nameof(canvasPoint));
             InSetColor = Colors.Black;
             Threshold = 100;
         }
 
-        public CanvasPoint CanvasPoint 
-        { 
-            get => _canvasPoint;
-            set
-            {
-                _canvasPoint = value;
-                Points = null;
-                Points = new Windows.UI.Color[_canvasPoint.PointsCount];
-            }
-        }
-
         public Color InSetColor { get; set; }
-
-        public Color[] Points { get; private set; }
 
         public int Threshold
         {
@@ -55,15 +35,16 @@ namespace Catsfract
             }
         }
 
-        public void Calculate()
+        // TODO: Remove direct call to ColorScale - Put it as property        
+        protected override void Worker((int start, int end) slice)
         {
-            for (int pointIndex = 0; pointIndex < _canvasPoint.PointsCount; pointIndex++)
+            for (int pointIndex = slice.start; pointIndex < slice.end; pointIndex++)
             {
-                Complex c = _canvasPoint.ComplexFromIndex(pointIndex);
+                Complex c = ComplexFromIndex(pointIndex);
 
-                Points[pointIndex] = 
-                    Diverging(c.Real, c.Imaginary, out double speed) 
-                    ? ColorScale.Viridis[Convert.ToInt32(speed)].ARGBValue 
+                Points[pointIndex] =
+                    Diverging(c.Real, c.Imaginary, out double speed)
+                    ? ColorScale.Viridis[Convert.ToInt32(speed)].ARGBValue
                     : InSetColor;
             }
         }
@@ -79,7 +60,7 @@ namespace Catsfract
                 double zasq = za * za;
                 double zbsq = zb * zb;
 
-                // new za must calculated after zb, as new zb is calculated from za
+                // new za must be calculated after new zb, as new zb is calculated from za
                 zb = 2 * za * zb + cb;
                 za = zasq - zbsq + ca;
 
