@@ -23,6 +23,8 @@ namespace Catsfract
     /// </summary>
     sealed partial class App : Application
     {
+        public ResourceLoader AppResourceLoader { get; private set; }
+
         /// <summary>
         /// Initialise l'objet d'application de singleton.  Il s'agit de la première ligne du code créé
         /// à être exécutée. Elle correspond donc à l'équivalent logique de main() ou WinMain().
@@ -42,7 +44,6 @@ namespace Catsfract
         {
             if (e == null) throw new ArgumentNullException(nameof(e));
 
-
             // Ne répétez pas l'initialisation de l'application lorsque la fenêtre comporte déjà du contenu,
             // assurez-vous juste que la fenêtre est active
             if (!(Window.Current.Content is Frame rootFrame))
@@ -51,6 +52,8 @@ namespace Catsfract
                 rootFrame = new Frame();
 
                 rootFrame.NavigationFailed += OnNavigationFailed;
+
+                AppResourceLoader = ResourceLoader.GetForCurrentView();
 
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {

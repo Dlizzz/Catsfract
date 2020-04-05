@@ -19,7 +19,7 @@ namespace Catsfract
             get => _threshold;
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Threshold), "Value must be strictly positive");
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Threshold), resourceLoader.GetString("ValueNotStrictlyPositive"));
                 _threshold = value;
             }
         }

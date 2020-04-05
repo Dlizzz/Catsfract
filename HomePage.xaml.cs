@@ -2,6 +2,7 @@
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.Foundation;
+using Windows.ApplicationModel.Resources;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 
@@ -14,17 +15,18 @@ namespace Catsfract
     /// </summary>
     public sealed partial class MainPage : Page, IDisposable
     {
-        private bool disposed = false;
-
         private Point originComplexPlan = new Point(400, 400);
         private double zoom = 500;
         private MandelbrotSet mandelbrotSet;
-        
+
+        #region Page        
         public MainPage()
         {
             this.InitializeComponent();
         }
+        #endregion
 
+        #region CanOnScreen
         private void CanOnScreen_CreateResources(CanvasControl sender, Microsoft.Graphics.Canvas.UI.CanvasCreateResourcesEventArgs args)
         {
             Size size = new Size(sender.ActualWidth, sender.ActualHeight);
@@ -34,15 +36,30 @@ namespace Catsfract
             mandelbrotSet = new MandelbrotSet(sender, size, originComplexPlan, zoom);
         }
 
-        private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args)
+        private void CanOnScreen_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
             if (sender.ReadyToDraw) args.DrawingSession.DrawImage(mandelbrotSet.RenderTarget);
         }
 
+#pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         private void CanOnScreen_SizeChanged(object sender, SizeChangedEventArgs args)
+#pragma warning restore CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         {
             if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas) mandelbrotSet.SizeCanvas = args.NewSize;
         }
+
+        private void CanOnScreen_DoubleTapped(object sender, Windows.UI.Xaml.Input.DoubleTappedRoutedEventArgs args)
+        {
+            if (((CanvasControl)sender).ReadyToDraw)
+            {
+                mandelbrotSet.OriginComplexPlan = args.GetPosition((CanvasControl)sender);
+                ((CanvasControl)sender).Invalidate();
+            }
+        }
+        #endregion
+        
+        #region Dispose
+        private bool disposed = false;
 
         // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()
@@ -64,5 +81,6 @@ namespace Catsfract
 
             disposed = true;
         }
+        #endregion
     }
 }

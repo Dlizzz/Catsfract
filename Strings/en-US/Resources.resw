@@ -119,5 +119,10 @@
   </resheader>
   <data name="ValueNotPositive" xml:space="preserve">
     <value>Value must be positive.</value>
+    <comment>Property setter error message</comment>
+  </data>
+  <data name="ValueNotStrictlyPositive" xml:space="preserve">
+    <value>Value must be strictly positive.</value>
+    <comment>Property setter error message</comment>
   </data>
 </root>

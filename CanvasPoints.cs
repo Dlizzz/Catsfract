@@ -4,6 +4,8 @@ using System.Buffers;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
+using Windows.UI.Xaml;
+using Windows.ApplicationModel.Resources;
 using Microsoft.Graphics.Canvas;
 
 namespace Catsfract
@@ -11,6 +13,7 @@ namespace Catsfract
     abstract class CanvasPoints: IDisposable
     {
         private bool disposed = false;
+        protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
 
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
         private readonly ArrayPool<Color> colorArrayPool;
@@ -26,11 +29,11 @@ namespace Catsfract
             colorArrayPool = ArrayPool<Color>.Shared;
 
             // Don't use public properties to avoid multiple calculation at construction time
-            if (originComplexPlan.X < 0 || originComplexPlan.Y < 0) throw new ArgumentOutOfRangeException(nameof(originComplexPlan), "Value must be positive.");
+            if (originComplexPlan.X < 0 || originComplexPlan.Y < 0) throw new ArgumentOutOfRangeException(nameof(originComplexPlan), resourceLoader.GetString("ValueNotPositive"));
             _OriginComplexPlan = originComplexPlan;
-            if (zoom <= 0) throw new ArgumentOutOfRangeException(nameof(zoom), "Value must be strictly positive.");
+            if (zoom <= 0) throw new ArgumentOutOfRangeException(nameof(zoom), resourceLoader.GetString("ValueNotStrictlyPositive"));
             _zoom = zoom;
-            if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), "Value must be positive.");
+            if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), resourceLoader.GetString("ValueNotPositive"));
             _sizeCanvas = sizeCanvas;
 
             AllocateRenderTarget();
@@ -46,7 +49,7 @@ namespace Catsfract
             get => _sizeCanvas; 
             set
             {
-                if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), "Value must be positive.");
+                if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), resourceLoader.GetString("ValueNotPositive"));
                 _sizeCanvas = value;
 
                 AllocateRenderTarget();
@@ -60,7 +63,7 @@ namespace Catsfract
             get => _OriginComplexPlan;
             set
             {
-                if (value.X < 0 || value.Y < 0) throw new ArgumentOutOfRangeException(nameof(OriginComplexPlan), "Value must be positive.");
+                if (value.X < 0 || value.Y < 0) throw new ArgumentOutOfRangeException(nameof(OriginComplexPlan), resourceLoader.GetString("ValueNotPositive"));
                 _OriginComplexPlan = value;
 
                 Calculate();
@@ -72,7 +75,7 @@ namespace Catsfract
             get => _zoom;
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Zoom), "Value must be strictly positive.");
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Zoom), resourceLoader.GetString("ValueNotStrictlyPositive"));
                 _zoom = value;
 
                 Calculate();
