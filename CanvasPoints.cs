@@ -2,30 +2,33 @@
 using System.Numerics;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Windows.UI;
 using Windows.Foundation;
+using Windows.UI;
+using Microsoft.Graphics.Canvas;
 
 namespace Catsfract
 {
-    class CanvasPoints
+    abstract class CanvasPoints: IDisposable
     {
-        private Size _sizeCanvas;
-        private Point _OriginComplex;
-        private double _zoom;
-        private int _sliceCount;
-        protected List<(int start, int end)> slices;
+        private bool disposed = false;
 
-        public CanvasPoints(Size sizeCanvas, Point originComplex, double zoom, int sliceCount = 16)
+        private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
+        private Size _sizeCanvas;
+        private Point _OriginComplexPlan;
+        private double _zoom;
+        protected Color[] renderPixels;
+
+        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplexPlan, double zoom)
         {
+            renderResourceCreator = resourceCreator;
             SizeCanvas = sizeCanvas;
-            OriginComplex = originComplex;
+            OriginComplexPlan = originComplexPlan;
             Zoom = zoom;
-            SliceCount = sliceCount;
         }
 
-        public Color[] Points { get; private set; }
+        public CanvasRenderTarget RenderTarget { get; private set; }
 
-        // TODO: Move Color[] Points array to ArrayPool
+        // TODO: Move renderPixels array to ArrayPool
         public Size SizeCanvas 
         { 
             get => _sizeCanvas; 
@@ -33,19 +36,22 @@ namespace Catsfract
             {
                 if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), "Value must be positive.");
                 _sizeCanvas = value;
-                Points = null;
-                Points = new Windows.UI.Color[PointsCount];
-                MakeSlices();
+                
+                RenderTarget?.Dispose();
+                float width = Convert.ToSingle(_sizeCanvas.Width);
+                float height = Convert.ToSingle(_sizeCanvas.Height);
+                RenderTarget = new CanvasRenderTarget(renderResourceCreator, width, height);
+                renderPixels = RenderTarget.GetPixelColors();
             }
         }
 
-        public Point OriginComplex
+        public Point OriginComplexPlan
         {
-            get => _OriginComplex;
+            get => _OriginComplexPlan;
             set
             {
-                if (value.X < 0 || value.Y < 0) throw new ArgumentOutOfRangeException(nameof(OriginComplex), "Value must be positive.");
-                _OriginComplex = value;
+                if (value.X < 0 || value.Y < 0) throw new ArgumentOutOfRangeException(nameof(OriginComplexPlan), "Value must be positive.");
+                _OriginComplexPlan = value;
             }
         }
 
@@ -61,19 +67,7 @@ namespace Catsfract
 
         public int PointsCount => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
 
-        public int SliceCount
-        {
-            get => _sliceCount;
-            set
-            {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(SliceCount), "Value must be strictly positive.");
-                _sliceCount = value;
-
-                MakeSlices();
-            }
-        }
-
-        public int IndexFromComplex(Complex c) => Convert.ToInt32((_OriginComplex.Y - _zoom * c.Imaginary) * _sizeCanvas.Width + _zoom * c.Real + _OriginComplex.X);
+        public int IndexFromComplex(Complex c) => Convert.ToInt32((_OriginComplexPlan.Y - _zoom * c.Imaginary) * _sizeCanvas.Width + _zoom * c.Real + _OriginComplexPlan.X);
 
         public int IndexFromCanvas(Point point) => Convert.ToInt32(point.Y * _sizeCanvas.Width + point.X);
 
@@ -81,54 +75,48 @@ namespace Catsfract
         {
             int y = index / Convert.ToInt32(_sizeCanvas.Width);
 
-            return new Complex
-            (
-                (double)(index - y * _sizeCanvas.Width - _OriginComplex.X) / _zoom,
-                (double)(_OriginComplex.Y - y) / _zoom
-            );
+            return new Complex((index - y * _sizeCanvas.Width - _OriginComplexPlan.X) / _zoom, (_OriginComplexPlan.Y - y) / _zoom);
         }
 
-        public Complex ComplexFromCanvas(Point point) => new Complex((point.X - _OriginComplex.X) / _zoom, (_OriginComplex.Y - point.Y) / _zoom);
+        public Complex ComplexFromCanvas(Point point) => new Complex((point.X - _OriginComplexPlan.X) / _zoom, (_OriginComplexPlan.Y - point.Y) / _zoom);
 
         public Point CanvasFromIndex(int index)
         {
             int y = index / Convert.ToInt32(_sizeCanvas.Width);
 
-            return new Point
-            (
-                (double)(index - y * _sizeCanvas.Width),
-                (double)y
-            );
+            return new Point(index - y * _sizeCanvas.Width, y);
         }
 
-        public Point CanvasFromComplex(Complex c) => new Point(_zoom * c.Real + _OriginComplex.X, -_zoom * c.Imaginary + _OriginComplex.Y);
+        public Point CanvasFromComplex(Complex c) => new Point(_zoom * c.Real + _OriginComplexPlan.X, -_zoom * c.Imaginary + _OriginComplexPlan.Y);
 
         public void Calculate()
         {
-            Task[] workerTasks = new Task[_sliceCount];
+            Parallel.For(0, PointsCount, Worker);
 
-            for (int i = 0; i < _sliceCount; i++)
-            {
-                workerTasks[i] = Task.Run(() => Worker(slices[i]));
-            }
-            Task.WaitAll(workerTasks);
+            RenderTarget.SetPixelColors(renderPixels);
         }
 
-        protected virtual void Worker((int start, int end) slice) { }
+        protected abstract void Worker(int i);
 
-        private void MakeSlices()
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
         {
-            if (_sliceCount == 0) return;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            slices?.Clear();
-            slices ??= new List<(int start, int end)>();
+        private void Dispose(bool disposing)
+        {
+            // Do nothing if already disposed
+            if (disposed) return;
 
-            int sliceSize = PointsCount / _sliceCount;
-            for (int i = 0; i < _sliceCount - 1; i++)
+            // If the call is from Dispose, free managed resources.
+            if (disposing)
             {
-                slices.Add((start: i * sliceSize, end: (i + 1) * sliceSize));
+                RenderTarget?.Dispose();
             }
-            slices.Add((start: (_sliceCount - 1) * sliceSize, end: PointsCount));
+
+            disposed = true;
         }
     }
 }

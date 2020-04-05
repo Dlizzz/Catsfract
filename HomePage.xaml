@@ -14,6 +14,6 @@
             <ColumnDefinition Width="200"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <canvas:CanvasControl x:Name="CanOnScreen" Draw="CanvasControl_Draw" ClearColor="Black" Grid.Column="1" SizeChanged="CanOnScreen_SizeChanged"/>
+        <canvas:CanvasControl x:Name="CanOnScreen" Draw="CanvasControl_Draw" ClearColor="Black" Grid.Column="1" SizeChanged="CanOnScreen_SizeChanged" CreateResources="CanOnScreen_CreateResources"/>
     </Grid>
 </Page>

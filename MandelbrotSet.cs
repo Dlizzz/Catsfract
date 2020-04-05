@@ -2,6 +2,7 @@
 using System.Numerics;
 using Windows.UI;
 using Windows.Foundation;
+using Microsoft.Graphics.Canvas;
 
 namespace Catsfract
 {
@@ -9,7 +10,8 @@ namespace Catsfract
     {
         private int _threshold;
 
-        public MandelbrotSet(Size sizeCanvas, Point originComplex, double zoom, Color inSetColor, int threshold = 100): base(sizeCanvas, originComplex, zoom)
+        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplex, double zoom,  Color inSetColor, int threshold = 100)
+            : base(resourceCreator, sizeCanvas, originComplex, zoom)
         {
             if (inSetColor == null) throw new ArgumentNullException(nameof(inSetColor));
 
@@ -17,7 +19,8 @@ namespace Catsfract
             Threshold = threshold;
         }
 
-        public MandelbrotSet(Size sizeCanvas, Point originComplex, double zoom) : base(sizeCanvas, originComplex, zoom)
+        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplex, double zoom) 
+            : base(resourceCreator, sizeCanvas, originComplex, zoom)
         {
             InSetColor = Colors.Black;
             Threshold = 100;
@@ -36,17 +39,14 @@ namespace Catsfract
         }
 
         // TODO: Remove direct call to ColorScale - Put it as property        
-        protected override void Worker((int start, int end) slice)
+        protected override void Worker(int pointIndex)
         {
-            for (int pointIndex = slice.start; pointIndex < slice.end; pointIndex++)
-            {
-                Complex c = ComplexFromIndex(pointIndex);
+            Complex c = ComplexFromIndex(pointIndex);
 
-                Points[pointIndex] =
-                    Diverging(c.Real, c.Imaginary, out double speed)
-                    ? ColorScale.Viridis[Convert.ToInt32(speed)].ARGBValue
-                    : InSetColor;
-            }
+            renderPixels[pointIndex] =
+                Diverging(c.Real, c.Imaginary, out double speed)
+                ? ColorScale.Viridis[Convert.ToInt32(speed)].ARGBValue
+                : InSetColor;
         }
 
         private bool Diverging(double ca, double cb, out double speed)

@@ -1,9 +1,7 @@
 ﻿using System;
-using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.Foundation;
-using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 
 // Pour plus d'informations sur le modèle d'élément Page vierge, consultez la page https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -17,8 +15,6 @@ namespace Catsfract
     {
         private bool disposed = false;
 
-        private readonly CanvasDevice device;
-        private CanvasRenderTarget offscreen;
         private Point originComplex = new Point(400, 400);
         private double zoom = 500;
         private MandelbrotSet mandelbrotSet;
@@ -26,31 +22,29 @@ namespace Catsfract
         public MainPage()
         {
             this.InitializeComponent();
-            device = CanvasDevice.GetSharedDevice();
         }
 
-        private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args) => args.DrawingSession.DrawImage(offscreen);
+        private void CanOnScreen_CreateResources(CanvasControl sender, Microsoft.Graphics.Canvas.UI.CanvasCreateResourcesEventArgs args)
+        {
+            Size size = new Size(sender.ActualWidth, sender.ActualHeight);
+
+            mandelbrotSet?.Dispose();
+            mandelbrotSet = new MandelbrotSet(sender, size, originComplex, zoom);
+            mandelbrotSet.Calculate();
+        }
+
+        private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args)
+        {
+            if (sender.ReadyToDraw) args.DrawingSession.DrawImage(mandelbrotSet.RenderTarget);
+        }
 
         private void CanOnScreen_SizeChanged(object sender, SizeChangedEventArgs args)
         {
-            if (mandelbrotSet == null)
-            {
-                mandelbrotSet = new MandelbrotSet(args.NewSize, originComplex, zoom);
-            }
-            else
+            if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas)
             {
                 mandelbrotSet.SizeCanvas = args.NewSize;
+                mandelbrotSet.Calculate();
             }
-
-            offscreen?.Dispose();
-            float width = Convert.ToSingle(args.NewSize.Width);
-            float height = Convert.ToSingle(args.NewSize.Height);
-            float dpi = ((CanvasControl)sender).Dpi;
-            offscreen = new CanvasRenderTarget(device, width, height, dpi);
-
-            mandelbrotSet.Calculate();
-
-            offscreen.SetPixelColors(mandelbrotSet.Points);
         }
 
         // Public implementation of Dispose pattern callable by consumers.
@@ -68,8 +62,7 @@ namespace Catsfract
             // If the call is from Dispose, free managed resources.
             if (disposing)
             {
-                device?.Dispose();
-                offscreen?.Dispose();
+                mandelbrotSet?.Dispose();
             }
 
             disposed = true;
