@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Numerics;
-using System.Collections.Generic;
+using System.Buffers;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
@@ -13,6 +13,7 @@ namespace Catsfract
         private bool disposed = false;
 
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
+        private readonly ArrayPool<Color> colorArrayPool;
         private Size _sizeCanvas;
         private Point _OriginComplexPlan;
         private double _zoom;
@@ -21,9 +22,20 @@ namespace Catsfract
         public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplexPlan, double zoom)
         {
             renderResourceCreator = resourceCreator;
-            SizeCanvas = sizeCanvas;
-            OriginComplexPlan = originComplexPlan;
-            Zoom = zoom;
+
+            colorArrayPool = ArrayPool<Color>.Shared;
+
+            // Don't use public properties to avoid multiple calculation at construction time
+            if (originComplexPlan.X < 0 || originComplexPlan.Y < 0) throw new ArgumentOutOfRangeException(nameof(originComplexPlan), "Value must be positive.");
+            _OriginComplexPlan = originComplexPlan;
+            if (zoom <= 0) throw new ArgumentOutOfRangeException(nameof(zoom), "Value must be strictly positive.");
+            _zoom = zoom;
+            if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), "Value must be positive.");
+            _sizeCanvas = sizeCanvas;
+
+            AllocateRenderTarget();
+
+            Calculate();
         }
 
         public CanvasRenderTarget RenderTarget { get; private set; }
@@ -36,12 +48,10 @@ namespace Catsfract
             {
                 if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), "Value must be positive.");
                 _sizeCanvas = value;
-                
-                RenderTarget?.Dispose();
-                float width = Convert.ToSingle(_sizeCanvas.Width);
-                float height = Convert.ToSingle(_sizeCanvas.Height);
-                RenderTarget = new CanvasRenderTarget(renderResourceCreator, width, height);
-                renderPixels = RenderTarget.GetPixelColors();
+
+                AllocateRenderTarget();
+
+                Calculate();
             }
         }
 
@@ -52,6 +62,8 @@ namespace Catsfract
             {
                 if (value.X < 0 || value.Y < 0) throw new ArgumentOutOfRangeException(nameof(OriginComplexPlan), "Value must be positive.");
                 _OriginComplexPlan = value;
+
+                Calculate();
             }
         }
 
@@ -62,6 +74,8 @@ namespace Catsfract
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Zoom), "Value must be strictly positive.");
                 _zoom = value;
+
+                Calculate();
             }
         }
 
@@ -89,20 +103,31 @@ namespace Catsfract
 
         public Point CanvasFromComplex(Complex c) => new Point(_zoom * c.Real + _OriginComplexPlan.X, -_zoom * c.Imaginary + _OriginComplexPlan.Y);
 
-        public void Calculate()
-        {
-            Parallel.For(0, PointsCount, Worker);
-
-            RenderTarget.SetPixelColors(renderPixels);
-        }
-
-        protected abstract void Worker(int i);
-
         // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected void Calculate()
+        {
+            Parallel.For(0, PointsCount, Worker);
+
+            RenderTarget.SetPixelColors(renderPixels);
+        }
+        
+        protected abstract void Worker(int i);
+
+        private void AllocateRenderTarget()
+        {
+            RenderTarget?.Dispose();
+            float width = Convert.ToSingle(_sizeCanvas.Width);
+            float height = Convert.ToSingle(_sizeCanvas.Height);
+            RenderTarget = new CanvasRenderTarget(renderResourceCreator, width, height);
+
+            if (renderPixels != null) colorArrayPool.Return(renderPixels);
+            renderPixels = colorArrayPool.Rent(PointsCount);
         }
 
         private void Dispose(bool disposing)

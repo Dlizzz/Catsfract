@@ -8,25 +8,11 @@ namespace Catsfract
 {
     class MandelbrotSet: CanvasPoints
     {
-        private int _threshold;
+        private int _threshold = 100;
+        private Color _inSetColor = Colors.Black;
 
-        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplex, double zoom,  Color inSetColor, int threshold = 100)
-            : base(resourceCreator, sizeCanvas, originComplex, zoom)
-        {
-            if (inSetColor == null) throw new ArgumentNullException(nameof(inSetColor));
-
-            InSetColor = inSetColor;
-            Threshold = threshold;
-        }
-
-        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplex, double zoom) 
-            : base(resourceCreator, sizeCanvas, originComplex, zoom)
-        {
-            InSetColor = Colors.Black;
-            Threshold = 100;
-        }
-
-        public Color InSetColor { get; set; }
+        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplex, double zoom)
+            : base(resourceCreator, sizeCanvas, originComplex, zoom) { }
 
         public int Threshold
         {
@@ -35,6 +21,16 @@ namespace Catsfract
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Threshold), "Value must be strictly positive");
                 _threshold = value;
+            }
+        }
+
+        public Color InSetColor
+        {
+            get => _inSetColor;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(InSetColor));
+                _inSetColor = value;
             }
         }
 
@@ -64,7 +60,8 @@ namespace Catsfract
                 zb = 2 * za * zb + cb;
                 za = zasq - zbsq + ca;
 
-                if (zasq + zbsq > 4) break;
+                if (za * za + zb * zb > 4) break;
+
                 n++;
             }
 

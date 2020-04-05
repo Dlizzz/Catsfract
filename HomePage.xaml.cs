@@ -2,6 +2,7 @@
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.Foundation;
+using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 
 // Pour plus d'informations sur le modèle d'élément Page vierge, consultez la page https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -15,7 +16,7 @@ namespace Catsfract
     {
         private bool disposed = false;
 
-        private Point originComplex = new Point(400, 400);
+        private Point originComplexPlan = new Point(400, 400);
         private double zoom = 500;
         private MandelbrotSet mandelbrotSet;
         
@@ -28,9 +29,9 @@ namespace Catsfract
         {
             Size size = new Size(sender.ActualWidth, sender.ActualHeight);
 
-            mandelbrotSet?.Dispose();
-            mandelbrotSet = new MandelbrotSet(sender, size, originComplex, zoom);
-            mandelbrotSet.Calculate();
+            if (args.Reason != CanvasCreateResourcesReason.FirstTime) mandelbrotSet.Dispose();
+
+            mandelbrotSet = new MandelbrotSet(sender, size, originComplexPlan, zoom);
         }
 
         private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args)
@@ -40,11 +41,7 @@ namespace Catsfract
 
         private void CanOnScreen_SizeChanged(object sender, SizeChangedEventArgs args)
         {
-            if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas)
-            {
-                mandelbrotSet.SizeCanvas = args.NewSize;
-                mandelbrotSet.Calculate();
-            }
+            if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas) mandelbrotSet.SizeCanvas = args.NewSize;
         }
 
         // Public implementation of Dispose pattern callable by consumers.
