@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Globalization;
+using System.Threading.Tasks;
 using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -18,8 +20,9 @@ namespace Catsfract
     /// </summary>
     public sealed partial class MainPage : Page, IDisposable
     {
-        private Point originComplexPlan = new Point(400, 400);
-        private double zoom = 500;
+        private const int MOUSE_WHEEL = 120;
+        private readonly float wheelMagnifierRatio = 0.1F;
+        private readonly float scale = 0.0001F;
         private MandelbrotSet mandelbrotSet;
 
         #region Page        
@@ -27,51 +30,74 @@ namespace Catsfract
         {
             this.InitializeComponent();
         }
+
+#pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
+        private void PagHome_Unloaded(object sender, RoutedEventArgs e)
+#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
+        {
+            Canvas.RemoveFromVisualTree();
+            Canvas = null;
+        }
+
         #endregion
 
-        #region CanOnScreen
-        private void CanOnScreen_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
+        #region Canvas
+        private void Canvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
+        {
+            args.TrackAsyncAction(Canvas_CreateResourcesAsync(sender).AsAsyncAction());
+        }
+
+#pragma warning disable CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
+        private async Task Canvas_CreateResourcesAsync(CanvasControl sender)
+#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
         {
             Size size = new Size(sender.ActualWidth, sender.ActualHeight);
 
-            if (args.Reason != CanvasCreateResourcesReason.FirstTime) mandelbrotSet.Dispose();
-
-            mandelbrotSet = new MandelbrotSet(sender, size, originComplexPlan, zoom);
+            mandelbrotSet?.Dispose();
+            Vector2 origin = new Vector2(Convert.ToSingle(size.Width / 2), Convert.ToSingle(size.Height / 2));
+            mandelbrotSet = new MandelbrotSet(sender, size, origin, scale);
         }
 
-        private void CanOnScreen_Draw(CanvasControl sender, CanvasDrawEventArgs args)
+        private void Canvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
             if (sender.ReadyToDraw) args.DrawingSession.DrawImage(mandelbrotSet.RenderTarget);
         }
 
 #pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
-        private void CanOnScreen_SizeChanged(object sender, SizeChangedEventArgs args)
+        private void Canvas_SizeChanged(object sender, SizeChangedEventArgs args)
 #pragma warning restore CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         {
             if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas) mandelbrotSet.SizeCanvas = args.NewSize;
         }
 
-        private void CanOnScreen_DoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
+        private void Canvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
         {
             if (((CanvasControl)sender).ReadyToDraw)
             {
-                mandelbrotSet.OriginComplexPlan = args.GetPosition((CanvasControl)sender);
+                Vector2 clickedPoint = args.GetPosition((CanvasControl)sender).ToVector2();
+
+                Vector2 translation = mandelbrotSet.Center - clickedPoint; 
+
+                mandelbrotSet.Origin += translation;
+
                 ((CanvasControl)sender).Invalidate();
             }
         }
 
 #pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
-        private void CanOnScreen_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs args)
+        private void Canvas_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs args)
 #pragma warning restore CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         {
-            Debug.WriteLine(args.Delta.ToString());
+            //Debug.WriteLine(args.Delta.ToString());
         }
 
-        private void CanOnScreen_PointerWheelChanged(object sender, PointerRoutedEventArgs args)
+        private void Canvas_PointerWheelChanged(object sender, PointerRoutedEventArgs args)
         {
             PointerPoint pointerPoint = args.GetCurrentPoint((CanvasControl)sender);
 
-            mandelbrotSet.Zoom = mandelbrotSet.ZoomFromMouseWheelDelta(pointerPoint.Properties);
+            int magnifierPower = Math.Abs(pointerPoint.Properties.MouseWheelDelta) / MOUSE_WHEEL;
+            float magnifier = pointerPoint.Properties.MouseWheelDelta > 0 ? 1 - wheelMagnifierRatio : 1 + wheelMagnifierRatio;
+            mandelbrotSet.Scale *= Convert.ToSingle(Math.Pow(magnifier, magnifierPower));
 
             ((CanvasControl)sender).Invalidate();
         }

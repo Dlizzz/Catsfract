@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Numerics;
+using System.Diagnostics;
 using System.Buffers;
+using System.Globalization;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
-using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.ApplicationModel.Resources;
 using Microsoft.Graphics.Canvas;
@@ -13,35 +14,35 @@ namespace Catsfract
 {
     abstract class CanvasPoints: IDisposable
     {
-        private bool disposed = false;
-        private const double MOUSE_WHEEL = 120;
-        private readonly double wheelMagnifierRatio = 0.1;
-        protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
+        private Size _sizeCanvas;
+        private Vector3 _origin;
+        private float _scale;
 
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
         private readonly ArrayPool<Color> colorArrayPool;
-        private Size _sizeCanvas;
-        private Point _OriginComplexPlan;
-        private double _zoom;
-        protected Color[] renderPixels;
+        private bool disposed = false;
+        private Matrix4x4 transformation;
 
-        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplexPlan, double zoom)
+        protected Color[] renderPixels;
+        protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
+
+        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Vector2 origin, float scale)
         {
             renderResourceCreator = resourceCreator;
 
             colorArrayPool = ArrayPool<Color>.Shared;
 
             // Don't use public properties to avoid multiple calculation at construction time
-            if (originComplexPlan.X < 0 || originComplexPlan.Y < 0) throw new ArgumentOutOfRangeException(nameof(originComplexPlan), resourceLoader.GetString("ValueNotPositive"));
-            _OriginComplexPlan = originComplexPlan;
-            if (zoom <= 0) throw new ArgumentOutOfRangeException(nameof(zoom), resourceLoader.GetString("ValueNotStrictlyPositive"));
-            _zoom = zoom;
+            _origin = new Vector3(origin, 1);
+            if (scale <= 0) throw new ArgumentOutOfRangeException(nameof(scale), resourceLoader.GetString("ValueNotStrictlyPositive"));
+            _scale = scale;
             if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), resourceLoader.GetString("ValueNotPositive"));
             _sizeCanvas = sizeCanvas;
 
-            AllocateRenderTarget();
+            UpdateTransformation();
 
-            Calculate();
+            // Don't calculate within the constructor as the Worker thread is not yet implemented
+            AllocateRenderTarget();
         }
 
         public CanvasRenderTarget RenderTarget { get; private set; }
@@ -61,25 +62,33 @@ namespace Catsfract
             }
         }
 
-        public Point OriginComplexPlan
+        public Vector2 Origin
         {
-            get => _OriginComplexPlan;
+            // Origin is also modified by scaling
+            get => new Vector2(_origin.X, _origin.Y);
             set
             {
-                if (value.X < 0 || value.Y < 0) throw new ArgumentOutOfRangeException(nameof(OriginComplexPlan), resourceLoader.GetString("ValueNotPositive"));
-                _OriginComplexPlan = value;
+                _origin = new Vector3(value, 1);
+
+                UpdateTransformation();
 
                 Calculate();
             }
         }
 
-        public double Zoom
+        public Vector2 Center => new Vector2(Convert.ToSingle(_sizeCanvas.Width / 2), Convert.ToSingle(_sizeCanvas.Height / 2));
+
+        public float Scale
         {
-            get => _zoom;
+            get => _scale;
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Zoom), resourceLoader.GetString("ValueNotStrictlyPositive"));
-                _zoom = value;
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Scale), resourceLoader.GetString("ValueNotStrictlyPositive"));
+
+                // Modify origin to have it to stay on the same Canvas point
+                _scale = value;
+
+                UpdateTransformation();
 
                 Calculate();
             }
@@ -87,29 +96,27 @@ namespace Catsfract
 
         public int PointsCount => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
 
-        public int IndexFromComplex(Complex c) => Convert.ToInt32((_OriginComplexPlan.Y - _zoom * c.Imaginary) * _sizeCanvas.Width + _zoom * c.Real + _OriginComplexPlan.X);
+        //public int ToIndex(Complex c) => Convert.ToInt32((_origin.Y - _scale * c.Imaginary) * _sizeCanvas.Width + _scale * c.Real + _origin.X);
 
-        public int IndexFromCanvas(Point point) => Convert.ToInt32(point.Y * _sizeCanvas.Width + point.X);
+        //public int ToIndex(Vector2 point) => Convert.ToInt32(point.Y * _sizeCanvas.Width + point.X);
 
-        public Complex ComplexFromIndex(int index)
+        public Complex OldToComplex(int index)
         {
             int y = index / Convert.ToInt32(_sizeCanvas.Width);
 
-            return new Complex((index - y * _sizeCanvas.Width - _OriginComplexPlan.X) / _zoom, (_OriginComplexPlan.Y - y) / _zoom);
+            return new Complex((index - y * _sizeCanvas.Width - _origin.X) * _scale, (_origin.Y - y) * _scale);
         }
 
-        public Complex ComplexFromCanvas(Point point) => new Complex((point.X - _OriginComplexPlan.X) / _zoom, (_OriginComplexPlan.Y - point.Y) / _zoom);
+        //public Complex ToComplex(Vector2 point) => new Complex((point.X - _origin.X) / _scale, (_origin.Y - point.Y) / _scale);
 
-        public Point CanvasFromIndex(int index)
-        {
-            int y = index / Convert.ToInt32(_sizeCanvas.Width);
+        //public Vector2 ToPoint(int index)
+        //{
+        //    int y = index / Convert.ToInt32(_sizeCanvas.Width);
 
-            return new Point(index - y * _sizeCanvas.Width, y);
-        }
+        //    return new Vector2(Convert.ToSingle(index - y * _sizeCanvas.Width), y);
+        //}
 
-        public Point CanvasFromComplex(Complex c) => new Point(_zoom * c.Real + _OriginComplexPlan.X, -_zoom * c.Imaginary + _OriginComplexPlan.Y);
-
-        public double ZoomFromMouseWheelDelta(PointerPointProperties pointerPointProperties) => _zoom * (1 + pointerPointProperties.MouseWheelDelta / MOUSE_WHEEL * wheelMagnifierRatio);
+        //public Vector2 ToPoint(Complex c) => new Vector2(Convert.ToSingle(_scale * c.Real + _origin.X), Convert.ToSingle(-_scale * c.Imaginary + _origin.Y));
 
         // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()
@@ -124,8 +131,33 @@ namespace Catsfract
 
             RenderTarget.SetPixelColors(renderPixels);
         }
-        
+
         protected abstract void Worker(int i);
+
+        protected Complex ToComplex(int index)
+        {
+            int y = index / Convert.ToInt32(_sizeCanvas.Width); // Euclidean division
+            int x = index - y * Convert.ToInt32(_sizeCanvas.Width);
+
+            Vector3 point = Vector3.Transform(new Vector3(x, y, 1), transformation);
+
+            Complex complex = new Complex(point.X, point.Y);
+
+            Complex oldComplex = OldToComplex(index);
+
+            return complex;
+        }
+
+        private void UpdateTransformation()
+        {
+            Plane xz = new Plane(0, 1, 0, 0);
+
+            Matrix4x4 scaling = Matrix4x4.CreateScale(_scale);
+            Matrix4x4 reflection = Matrix4x4.CreateReflection(xz);
+            Matrix4x4 translation = Matrix4x4.CreateTranslation(_origin);
+
+            transformation = reflection * translation * scaling; 
+        }
 
         private void AllocateRenderTarget()
         {

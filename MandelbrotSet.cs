@@ -8,11 +8,17 @@ namespace Catsfract
 {
     class MandelbrotSet: CanvasPoints
     {
-        private int _threshold = 100;
-        private Color _inSetColor = Colors.Black;
+        private int _threshold;
+        private readonly Color renderTransparent = new Color { A = 0, R = 0, G = 0, B = 0 };
 
-        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Point originComplex, double zoom)
-            : base(resourceCreator, sizeCanvas, originComplex, zoom) { }
+        public MandelbrotSet(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Vector2 origin, float scale)
+            : base(resourceCreator, sizeCanvas, origin, scale) 
+        {
+            _threshold = 100;
+
+            // We can now calculate as the worker thread is implemented
+            Calculate();
+        }
 
         public int Threshold
         {
@@ -24,25 +30,15 @@ namespace Catsfract
             }
         }
 
-        public Color InSetColor
-        {
-            get => _inSetColor;
-            set
-            {
-                if (value == null) throw new ArgumentNullException(nameof(InSetColor));
-                _inSetColor = value;
-            }
-        }
-
         // TODO: Remove direct call to ColorScale - Put it as property        
         protected override void Worker(int pointIndex)
         {
-            Complex c = ComplexFromIndex(pointIndex);
+            Complex c = ToComplex(pointIndex);
 
             renderPixels[pointIndex] =
                 Diverging(c.Real, c.Imaginary, out double speed)
                 ? ColorScale.Viridis[Convert.ToInt32(speed)].ARGBValue
-                : InSetColor;
+                : renderTransparent;
         }
 
         private bool Diverging(double ca, double cb, out double speed)

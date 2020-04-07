@@ -6,14 +6,15 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
-    mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    mc:Ignorable="d" Unloaded="PagHome_Unloaded" Background="White">
 
     <Grid x:Name="GrdHome">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <canvas:CanvasControl x:Name="CanOnScreen" ClearColor="Black" Grid.Column="1" SizeChanged="CanOnScreen_SizeChanged" CreateResources="CanOnScreen_CreateResources" DoubleTapped="CanOnScreen_DoubleTapped" Draw="CanOnScreen_Draw" ManipulationMode="All" ManipulationDelta="CanOnScreen_ManipulationDelta" PointerWheelChanged="CanOnScreen_PointerWheelChanged"/>
+        <Grid x:Name="GrdCanvas" Grid.Column="1" Background="Black">
+            <canvas:CanvasControl x:Name="Canvas"  SizeChanged="Canvas_SizeChanged" CreateResources="Canvas_CreateResources" DoubleTapped="Canvas_DoubleTapped" Draw="Canvas_Draw" ManipulationMode="All" ManipulationDelta="Canvas_ManipulationDelta" PointerWheelChanged="Canvas_PointerWheelChanged" ClearColor="#00000000" CanBeScrollAnchor="True"/>
+        </Grid>
     </Grid>
 </Page>
