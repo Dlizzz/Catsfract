@@ -136,27 +136,29 @@ namespace Catsfract
 
         protected Complex ToComplex(int index)
         {
+            // Transform bitmap index (per line, left to right) 
+            // to bitmap coordinates (x left to right, y top to bottom, origin top left) 
             int y = index / Convert.ToInt32(_sizeCanvas.Width); // Euclidean division
             int x = index - y * Convert.ToInt32(_sizeCanvas.Width);
 
-            Vector3 point = Vector3.Transform(new Vector3(x, y, 1), transformation);
+            // Vector origin plan complex to point in bitmap coordinates
+            Vector3 point = _origin - new Vector3(x, y, 1);
 
-            Complex complex = new Complex(point.X, point.Y);
+            // Vector origin plan complex to point in complex coordinates
+            point = Vector3.Transform(point, transformation);
 
-            Complex oldComplex = OldToComplex(index);
-
-            return complex;
+            return new Complex(point.X, point.Y);
         }
 
         private void UpdateTransformation()
         {
             Plane xz = new Plane(0, 1, 0, 0);
 
-            Matrix4x4 scaling = Matrix4x4.CreateScale(_scale);
             Matrix4x4 reflection = Matrix4x4.CreateReflection(xz);
             Matrix4x4 translation = Matrix4x4.CreateTranslation(_origin);
+            Matrix4x4 scaling = Matrix4x4.CreateScale(_scale);
 
-            transformation = reflection * translation * scaling; 
+            transformation = translation * reflection * scaling;
         }
 
         private void AllocateRenderTarget()

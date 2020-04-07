@@ -22,7 +22,7 @@ namespace Catsfract
     {
         private const int MOUSE_WHEEL = 120;
         private readonly float wheelMagnifierRatio = 0.1F;
-        private readonly float scale = 0.0001F;
+        private readonly float scale = 0.002F;
         private MandelbrotSet mandelbrotSet;
 
         #region Page        
