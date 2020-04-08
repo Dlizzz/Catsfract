@@ -21,7 +21,7 @@ namespace Catsfract
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
         private readonly ArrayPool<Color> colorArrayPool;
         private bool disposed = false;
-        private Matrix4x4 transformation, transformationInverse;
+        private Matrix4x4 transformation;
 
         protected Color[] renderPixels;
         protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
@@ -147,7 +147,6 @@ namespace Catsfract
 
             // Global transformation matrix (order matters): translation, then reflection, then scaling 
             transformation = translation * reflection * scaling;
-            Matrix4x4.Invert(transformation, out transformationInverse);
         }
 
         private void AllocateRenderTarget()
