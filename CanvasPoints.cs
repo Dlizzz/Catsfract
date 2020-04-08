@@ -21,7 +21,7 @@ namespace Catsfract
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
         private readonly ArrayPool<Color> colorArrayPool;
         private bool disposed = false;
-        private Matrix4x4 transformation;
+        private Matrix4x4 transformation, transformationInverse;
 
         protected Color[] renderPixels;
         protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
@@ -33,7 +33,7 @@ namespace Catsfract
             colorArrayPool = ArrayPool<Color>.Shared;
 
             // Don't use public properties to avoid multiple calculation at construction time
-            _origin = new Vector3(origin, 1);
+            _origin = new Vector3(origin, 0);
             if (scale <= 0) throw new ArgumentOutOfRangeException(nameof(scale), resourceLoader.GetString("ValueNotStrictlyPositive"));
             _scale = scale;
             if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), resourceLoader.GetString("ValueNotPositive"));
@@ -68,7 +68,7 @@ namespace Catsfract
             get => new Vector2(_origin.X, _origin.Y);
             set
             {
-                _origin = new Vector3(value, 1);
+                _origin = new Vector3(value, 0);
 
                 UpdateTransformation();
 
@@ -85,7 +85,9 @@ namespace Catsfract
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Scale), resourceLoader.GetString("ValueNotStrictlyPositive"));
 
-                // Modify origin to have it to stay on the same Canvas point
+                // Transalte the origin to have the complex at the center of the canevas staying at the center
+                _origin.X = (value - _scale) / value * Center.X + _scale / value * _origin.X;
+                _origin.Y = (value - _scale) / value * Center.Y + _scale / value * _origin.Y;
                 _scale = value;
 
                 UpdateTransformation();
@@ -95,28 +97,6 @@ namespace Catsfract
         }
 
         public int PointsCount => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
-
-        //public int ToIndex(Complex c) => Convert.ToInt32((_origin.Y - _scale * c.Imaginary) * _sizeCanvas.Width + _scale * c.Real + _origin.X);
-
-        //public int ToIndex(Vector2 point) => Convert.ToInt32(point.Y * _sizeCanvas.Width + point.X);
-
-        public Complex OldToComplex(int index)
-        {
-            int y = index / Convert.ToInt32(_sizeCanvas.Width);
-
-            return new Complex((index - y * _sizeCanvas.Width - _origin.X) * _scale, (_origin.Y - y) * _scale);
-        }
-
-        //public Complex ToComplex(Vector2 point) => new Complex((point.X - _origin.X) / _scale, (_origin.Y - point.Y) / _scale);
-
-        //public Vector2 ToPoint(int index)
-        //{
-        //    int y = index / Convert.ToInt32(_sizeCanvas.Width);
-
-        //    return new Vector2(Convert.ToSingle(index - y * _sizeCanvas.Width), y);
-        //}
-
-        //public Vector2 ToPoint(Complex c) => new Vector2(Convert.ToSingle(_scale * c.Real + _origin.X), Convert.ToSingle(-_scale * c.Imaginary + _origin.Y));
 
         // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()
@@ -134,6 +114,14 @@ namespace Catsfract
 
         protected abstract void Worker(int i);
 
+        protected Complex ToComplex(Vector2 point)
+        {
+            // Point in complex coordinates
+            Vector3 complex = Vector3.Transform(new Vector3(point, 0), transformation);
+
+            return new Complex(complex.X, complex.Y);
+        }
+
         protected Complex ToComplex(int index)
         {
             // Transform bitmap index (per line, left to right) 
@@ -141,24 +129,25 @@ namespace Catsfract
             int y = index / Convert.ToInt32(_sizeCanvas.Width); // Euclidean division
             int x = index - y * Convert.ToInt32(_sizeCanvas.Width);
 
-            // Vector origin plan complex to point in bitmap coordinates
-            Vector3 point = _origin - new Vector3(x, y, 1);
+            // Point in complex coordinates
+            Vector3 complex = Vector3.Transform(new Vector3(x, y, 0), transformation);
 
-            // Vector origin plan complex to point in complex coordinates
-            point = Vector3.Transform(point, transformation);
-
-            return new Complex(point.X, point.Y);
+            return new Complex(complex.X, complex.Y);
         }
 
         private void UpdateTransformation()
         {
+            // Reflection plan (x symetry)
             Plane xz = new Plane(0, 1, 0, 0);
 
+            // Elementary transformation matrixes 
+            Matrix4x4 translation = Matrix4x4.CreateTranslation(-_origin);
             Matrix4x4 reflection = Matrix4x4.CreateReflection(xz);
-            Matrix4x4 translation = Matrix4x4.CreateTranslation(_origin);
             Matrix4x4 scaling = Matrix4x4.CreateScale(_scale);
 
+            // Global transformation matrix (order matters): translation, then reflection, then scaling 
             transformation = translation * reflection * scaling;
+            Matrix4x4.Invert(transformation, out transformationInverse);
         }
 
         private void AllocateRenderTarget()

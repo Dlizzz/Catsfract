@@ -22,87 +22,84 @@ namespace Catsfract
     {
         private const int MOUSE_WHEEL = 120;
         private readonly float wheelMagnifierRatio = 0.1F;
-        private readonly float scale = 0.002F;
+        private readonly float scale = 0.01F;
         private MandelbrotSet mandelbrotSet;
 
+#pragma warning disable CA1801, IDE0060 // Le paramètre sender de la méthode n'est jamais utilisé
         #region Page        
         public MainPage()
         {
             this.InitializeComponent();
         }
 
-#pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         private void PagHome_Unloaded(object sender, RoutedEventArgs e)
-#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
         {
             Canvas.RemoveFromVisualTree();
             Canvas = null;
         }
-
         #endregion
 
         #region Canvas
         private void Canvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
-            args.TrackAsyncAction(Canvas_CreateResourcesAsync(sender).AsAsyncAction());
+            args.TrackAsyncAction(Canvas_CreateResourcesAsync(Canvas).AsAsyncAction());
         }
 
 #pragma warning disable CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
         private async Task Canvas_CreateResourcesAsync(CanvasControl sender)
 #pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
         {
-            Size size = new Size(sender.ActualWidth, sender.ActualHeight);
+            Size size = Canvas.ActualSize.ToSize();
 
             mandelbrotSet?.Dispose();
             Vector2 origin = new Vector2(Convert.ToSingle(size.Width / 2), Convert.ToSingle(size.Height / 2));
-            mandelbrotSet = new MandelbrotSet(sender, size, origin, scale);
+            mandelbrotSet = new MandelbrotSet(Canvas, size, origin, scale);
         }
 
         private void Canvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
-            if (sender.ReadyToDraw) args.DrawingSession.DrawImage(mandelbrotSet.RenderTarget);
+            if (Canvas.ReadyToDraw) args.DrawingSession.DrawImage(mandelbrotSet.RenderTarget);
         }
 
-#pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         private void Canvas_SizeChanged(object sender, SizeChangedEventArgs args)
-#pragma warning restore CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         {
             if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas) mandelbrotSet.SizeCanvas = args.NewSize;
         }
 
         private void Canvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
         {
-            if (((CanvasControl)sender).ReadyToDraw)
+            if (Canvas.ReadyToDraw)
             {
-                Vector2 clickedPoint = args.GetPosition((CanvasControl)sender).ToVector2();
+                Vector2 clickedPoint = args.GetPosition(Canvas).ToVector2();
 
                 Vector2 translation = mandelbrotSet.Center - clickedPoint; 
 
                 mandelbrotSet.Origin += translation;
 
-                ((CanvasControl)sender).Invalidate();
+                Canvas.Invalidate();
             }
         }
 
-#pragma warning disable CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         private void Canvas_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs args)
-#pragma warning restore CA1801 // Le paramètre sender de la méthode n'est jamais utilisé
         {
-            //Debug.WriteLine(args.Delta.ToString());
+            mandelbrotSet.Origin += args.Delta.Translation.ToVector2();
+
+            Canvas.Invalidate();
         }
 
         private void Canvas_PointerWheelChanged(object sender, PointerRoutedEventArgs args)
         {
-            PointerPoint pointerPoint = args.GetCurrentPoint((CanvasControl)sender);
+            PointerPoint pointerPoint = args.GetCurrentPoint(Canvas);
 
             int magnifierPower = Math.Abs(pointerPoint.Properties.MouseWheelDelta) / MOUSE_WHEEL;
             float magnifier = pointerPoint.Properties.MouseWheelDelta > 0 ? 1 - wheelMagnifierRatio : 1 + wheelMagnifierRatio;
-            mandelbrotSet.Scale *= Convert.ToSingle(Math.Pow(magnifier, magnifierPower));
+            for (int i = 2; i <= magnifierPower; i++) magnifier *= magnifier;
+            mandelbrotSet.Scale *= magnifier;
 
-            ((CanvasControl)sender).Invalidate();
+            Canvas.Invalidate();
         }
-
         #endregion
+#pragma warning restore CA1801, IDE0060 // Supprimer le paramètre inutilisé
 
         #region Dispose
         private bool disposed = false;

@@ -46,17 +46,20 @@ namespace Catsfract
             int n = 0;
             double za = 0;
             double zb = 0;
+            double zasq, zbsq, magnsq;
 
             while (n < _threshold)
             {
-                double zasq = za * za;
-                double zbsq = zb * zb;
+                zasq = za * za;
+                zbsq = zb * zb;
 
                 // new za must be calculated after new zb, as new zb is calculated from za
                 zb = 2 * za * zb + cb;
                 za = zasq - zbsq + ca;
 
-                if (za * za + zb * zb > 4) break;
+                magnsq  = za * za + zb * zb;
+
+                if (magnsq > 4) break;
 
                 n++;
             }
