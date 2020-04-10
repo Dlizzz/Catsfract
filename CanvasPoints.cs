@@ -1,45 +1,52 @@
 ﻿using System;
 using System.Numerics;
-using System.Diagnostics;
 using System.Buffers;
-using System.Globalization;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
-using Windows.UI.Xaml;
-using Windows.ApplicationModel.Resources;
 using Microsoft.Graphics.Canvas;
 
 namespace Catsfract
 {
-    abstract class CanvasPoints: IDisposable
+    public interface IComplexSet
     {
+        double PointSetWorker(Complex c); 
+    }
+
+    public class CanvasPoints: IDisposable
+    {
+        private static readonly Color renderTransparent = new Color { A = 0, R = 0, G = 0, B = 0 };
+
+        private bool disposed = false;
+
         private Size _sizeCanvas;
-        private Vector3 _origin;
-        private float _scale;
+        private Vector2 _origin;
+        private double _scale;
 
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
+        private ColorsCollection _colorScale;
+
         private readonly ArrayPool<Color> colorArrayPool;
-        private bool disposed = false;
-        private Matrix4x4 transformation;
+        private Color[] renderPixels;
 
-        protected Color[] renderPixels;
-        protected readonly ResourceLoader resourceLoader = ((App)Application.Current).AppResourceLoader;
+        private readonly ArrayPool<double> doubleArrayPool;
+        private double[] renderValues;
 
-        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas, Vector2 origin, float scale)
+        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, ColorsCollection colorScale, Size sizeCanvas, Vector2 origin, double scale)
         {
             renderResourceCreator = resourceCreator;
 
+            _colorScale = colorScale;
+
             colorArrayPool = ArrayPool<Color>.Shared;
+            doubleArrayPool = ArrayPool<double>.Shared;
 
             // Don't use public properties to avoid multiple calculation at construction time
-            _origin = new Vector3(origin, 0);
-            if (scale <= 0) throw new ArgumentOutOfRangeException(nameof(scale), resourceLoader.GetString("ValueNotStrictlyPositive"));
+            _origin = origin;
+            if (scale <= 0) throw new ArgumentOutOfRangeException(nameof(scale), ((App)App.Current).AppResourceLoader.GetString("ValueNotStrictlyPositive"));
             _scale = scale;
-            if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), resourceLoader.GetString("ValueNotPositive"));
+            if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), ((App)App.Current).AppResourceLoader.GetString("ValueNotPositive"));
             _sizeCanvas = sizeCanvas;
-
-            UpdateTransformation();
 
             // Don't calculate within the constructor as the Worker thread is not yet implemented
             AllocateRenderTarget();
@@ -47,106 +54,97 @@ namespace Catsfract
 
         public CanvasRenderTarget RenderTarget { get; private set; }
 
-        // TODO: Move renderPixels array to ArrayPool
+        public ColorsCollection ColorScale 
+        { 
+            get => _colorScale; 
+            set 
+            {
+                if (value == null) throw new ArgumentNullException(nameof(ColorScale));
+                _colorScale = value;
+                Render(); 
+            }   
+        }
+
         public Size SizeCanvas 
         { 
             get => _sizeCanvas; 
             set
             {
-                if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), resourceLoader.GetString("ValueNotPositive"));
+                if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), ((App)App.Current).AppResourceLoader.GetString("ValueNotPositive"));
                 _sizeCanvas = value;
-
                 AllocateRenderTarget();
-
                 Calculate();
+                Render();
             }
         }
 
         public Vector2 Origin
         {
             // Origin is also modified by scaling
-            get => new Vector2(_origin.X, _origin.Y);
+            get => _origin;
             set
             {
-                _origin = new Vector3(value, 0);
-
-                UpdateTransformation();
-
+                _origin = value;
                 Calculate();
+                Render();
             }
         }
 
         public Vector2 Center => new Vector2(Convert.ToSingle(_sizeCanvas.Width / 2), Convert.ToSingle(_sizeCanvas.Height / 2));
 
-        public float Scale
+        public double Scale
         {
             get => _scale;
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Scale), resourceLoader.GetString("ValueNotStrictlyPositive"));
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Scale), ((App)App.Current).AppResourceLoader.GetString("ValueNotStrictlyPositive"));
 
                 // Transalte the origin to have the complex at the center of the canevas staying at the center
-                _origin.X = (value - _scale) / value * Center.X + _scale / value * _origin.X;
-                _origin.Y = (value - _scale) / value * Center.Y + _scale / value * _origin.Y;
+                _origin.X = Convert.ToSingle((value - _scale) / value * Center.X + _scale / value * _origin.X);
+                _origin.Y = Convert.ToSingle((value - _scale) / value * Center.Y + _scale / value * _origin.Y);
+
                 _scale = value;
-
-                UpdateTransformation();
-
                 Calculate();
+                Render();
             }
         }
 
         public int PointsCount => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
 
-        // Public implementation of Dispose pattern callable by consumers.
-        public void Dispose()
+        private void Calculate() => Parallel.For(0, PointsCount, Worker);
+
+        private void Worker(int index)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            Complex c = ToComplex(index);
+
+            renderValues[index] = 
         }
 
-        protected void Calculate()
+        private void Render()
         {
-            Parallel.For(0, PointsCount, Worker);
-
+            Parallel.For(
+                0, 
+                PointsCount, 
+                (index) => 
+                    renderPixels[index] = (renderValues[index] == 0) 
+                    ? renderTransparent 
+                    : ColorScale.ScaleToColorInverse(renderValues[index])
+            );
             RenderTarget.SetPixelColors(renderPixels);
         }
 
-        protected abstract void Worker(int i);
+        private Complex ToComplex(Vector2 point) => new Complex(_scale * (point.X - _origin.X), -_scale * (point.Y - _origin.Y));
 
-        protected Complex ToComplex(Vector2 point)
-        {
-            // Point in complex coordinates
-            Vector3 complex = Vector3.Transform(new Vector3(point, 0), transformation);
-
-            return new Complex(complex.X, complex.Y);
-        }
-
-        protected Complex ToComplex(int index)
+        private Complex ToComplex(int index)
         {
             // Transform bitmap index (per line, left to right) 
             // to bitmap coordinates (x left to right, y top to bottom, origin top left) 
-            int y = index / Convert.ToInt32(_sizeCanvas.Width); // Euclidean division
-            int x = index - y * Convert.ToInt32(_sizeCanvas.Width);
+            int lineCount = index / Convert.ToInt32(_sizeCanvas.Width); // Euclidean division
+            
+            float x = Convert.ToSingle(index - lineCount * _sizeCanvas.Width);
+            float y = Convert.ToSingle(lineCount);
 
-            // Point in complex coordinates
-            Vector3 complex = Vector3.Transform(new Vector3(x, y, 0), transformation);
-
-            return new Complex(complex.X, complex.Y);
-        }
-
-        private void UpdateTransformation()
-        {
-            // Reflection plan (x symetry)
-            Plane xz = new Plane(0, 1, 0, 0);
-
-            // Elementary transformation matrixes 
-            Matrix4x4 translation = Matrix4x4.CreateTranslation(-_origin);
-            Matrix4x4 reflection = Matrix4x4.CreateReflection(xz);
-            Matrix4x4 scaling = Matrix4x4.CreateScale(_scale);
-
-            // Global transformation matrix (order matters): translation, then reflection, then scaling 
-            transformation = translation * reflection * scaling;
+            return ToComplex(new Vector2(x, y));
         }
 
         private void AllocateRenderTarget()
@@ -158,6 +156,16 @@ namespace Catsfract
 
             if (renderPixels != null) colorArrayPool.Return(renderPixels);
             renderPixels = colorArrayPool.Rent(PointsCount);
+
+            if (renderValues != null) doubleArrayPool.Return(renderValues);
+            renderValues = doubleArrayPool.Rent(PointsCount);
+        }
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)

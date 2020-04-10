@@ -126,7 +126,11 @@
     <comment>Property setter error message</comment>
   </data>
   <data name="ValueNotPercentage" xml:space="preserve">
-    <value>Value is a percentage and must be between 0 and 100.</value>
+    <value>Value is a percentage and must be between 0 and 1.</value>
     <comment>Property setter error message</comment>
+  </data>
+  <data name="IndexOutOfRange" xml:space="preserve">
+    <value>Index is out of range.</value>
+    <comment>Property setter / getter error message</comment>
   </data>
 </root>

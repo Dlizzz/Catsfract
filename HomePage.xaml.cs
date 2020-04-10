@@ -22,7 +22,7 @@ namespace Catsfract
     {
         private const int MOUSE_WHEEL = 120;
         private readonly float wheelMagnifierRatio = 0.1F;
-        private readonly float scale = 0.01F;
+        private readonly double scale = 0.01;
         private MandelbrotSet mandelbrotSet;
 
 #pragma warning disable CA1801, IDE0060 // Le paramètre sender de la méthode n'est jamais utilisé
@@ -53,7 +53,7 @@ namespace Catsfract
 
             mandelbrotSet?.Dispose();
             Vector2 origin = new Vector2(Convert.ToSingle(size.Width / 2), Convert.ToSingle(size.Height / 2));
-            mandelbrotSet = new MandelbrotSet(Canvas, size, origin, scale);
+            mandelbrotSet = new MandelbrotSet(Canvas, ColorScales.ColorScale["Viridis"], size, origin, scale);
         }
 
         private void Canvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
