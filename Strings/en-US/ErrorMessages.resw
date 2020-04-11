@@ -133,4 +133,8 @@
     <value>Index is out of range.</value>
     <comment>Property setter / getter error message</comment>
   </data>
+  <data name="ValueNotZero" xml:space="preserve">
+    <value>Value can't be equal to zero.</value>
+    <comment>Property setter / getter error message</comment>
+  </data>
 </root>

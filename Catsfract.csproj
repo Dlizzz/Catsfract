@@ -123,9 +123,6 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="CanvasPoints.cs" />
-    <Compile Include="ColorScales\ColorScales.cs" />
-    <Compile Include="ColorScales\ColorKey.cs" />
-    <Compile Include="ColorScales\ColorCollection.cs" />
     <Compile Include="HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
     </Compile>
@@ -177,6 +174,16 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\Images\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CatsnetControls\CatsnetControls.csproj">
+      <Project>{082675a3-05e5-4d16-867d-c43c3211283e}</Project>
+      <Name>CatsnetControls</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CatsnetHelper\CatsnetHelper.csproj">
+      <Project>{2c603580-7b50-4787-94bc-5d0c81c30443}</Project>
+      <Name>CatsnetHelper</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

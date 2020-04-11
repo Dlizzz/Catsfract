@@ -10,6 +10,7 @@ using Windows.UI.Xaml.Input;
 using Windows.Foundation;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using CatsnetHelper;
 
 // Pour plus d'informations sur le modèle d'élément Page vierge, consultez la page https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -21,8 +22,8 @@ namespace Catsfract
     public sealed partial class MainPage : Page, IDisposable
     {
         private const int MOUSE_WHEEL = 120;
-        private readonly float wheelMagnifierRatio = 0.1F;
-        private readonly double scale = 0.01;
+        private readonly double wheelMagnifierRatio = 0.1;
+        private CanvasPoints canvasPoints;
         private MandelbrotSet mandelbrotSet;
 
 #pragma warning disable CA1801, IDE0060 // Le paramètre sender de la méthode n'est jamais utilisé
@@ -31,17 +32,12 @@ namespace Catsfract
         {
             this.InitializeComponent();
         }
-
-        private void PagHome_Unloaded(object sender, RoutedEventArgs e)
-        {
-            Canvas.RemoveFromVisualTree();
-            Canvas = null;
-        }
         #endregion
 
         #region Canvas
         private void Canvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
+            if (args.Reason == CanvasCreateResourcesReason.FirstTime) mandelbrotSet = new MandelbrotSet(100);
             args.TrackAsyncAction(Canvas_CreateResourcesAsync(Canvas).AsAsyncAction());
         }
 
@@ -51,30 +47,31 @@ namespace Catsfract
         {
             Size size = Canvas.ActualSize.ToSize();
 
-            mandelbrotSet?.Dispose();
-            Vector2 origin = new Vector2(Convert.ToSingle(size.Width / 2), Convert.ToSingle(size.Height / 2));
-            mandelbrotSet = new MandelbrotSet(Canvas, ColorScales.ColorScale["Viridis"], size, origin, scale);
+            canvasPoints?.Dispose();
+            canvasPoints = new CanvasPoints(Canvas, size) { Scale = 0.01 };
+            canvasPoints.SetColorScale(ColorScales.ColorScale["Viridis"]);
+            canvasPoints.SetPointsSet(mandelbrotSet);
         }
 
         private void Canvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
         {
-            if (Canvas.ReadyToDraw) args.DrawingSession.DrawImage(mandelbrotSet.RenderTarget);
+            if (Canvas.ReadyToDraw) args.DrawingSession.DrawImage(canvasPoints.RenderTarget);
         }
 
         private void Canvas_SizeChanged(object sender, SizeChangedEventArgs args)
         {
-            if (mandelbrotSet != null && args.NewSize != mandelbrotSet.SizeCanvas) mandelbrotSet.SizeCanvas = args.NewSize;
+            if (mandelbrotSet != null && args.NewSize != canvasPoints.SizeCanvas) canvasPoints.SizeCanvas = args.NewSize;
         }
 
         private void Canvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
         {
             if (Canvas.ReadyToDraw)
             {
-                Vector2 clickedPoint = args.GetPosition(Canvas).ToVector2();
-
-                Vector2 translation = mandelbrotSet.Center - clickedPoint; 
-
-                mandelbrotSet.Origin += translation;
+                Point clickedPoint = args.GetPosition(Canvas);
+                    
+                canvasPoints.Origin = new Point( 
+                    canvasPoints.Origin.X + canvasPoints.SizeCanvas.Width / 2 - clickedPoint.X,
+                    canvasPoints.Origin.Y + canvasPoints.SizeCanvas.Height / 2 - clickedPoint.Y);
 
                 Canvas.Invalidate();
             }
@@ -82,7 +79,9 @@ namespace Catsfract
 
         private void Canvas_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs args)
         {
-            mandelbrotSet.Origin += args.Delta.Translation.ToVector2();
+            canvasPoints.Origin = new Point(
+                canvasPoints.Origin.X + args.Delta.Translation.X,
+                canvasPoints.Origin.Y + args.Delta.Translation.Y);
 
             Canvas.Invalidate();
         }
@@ -92,9 +91,10 @@ namespace Catsfract
             PointerPoint pointerPoint = args.GetCurrentPoint(Canvas);
 
             int magnifierPower = Math.Abs(pointerPoint.Properties.MouseWheelDelta) / MOUSE_WHEEL;
-            float magnifier = pointerPoint.Properties.MouseWheelDelta > 0 ? 1 - wheelMagnifierRatio : 1 + wheelMagnifierRatio;
+            double magnifier = pointerPoint.Properties.MouseWheelDelta > 0 ? 1 - wheelMagnifierRatio : 1 + wheelMagnifierRatio;
             for (int i = 2; i <= magnifierPower; i++) magnifier *= magnifier;
-            mandelbrotSet.Scale *= magnifier;
+            
+            canvasPoints.Zoom(pointerPoint.Position, canvasPoints.Scale * magnifier);
 
             Canvas.Invalidate();
         }
@@ -119,12 +119,11 @@ namespace Catsfract
             // If the call is from Dispose, free managed resources.
             if (disposing)
             {
-                mandelbrotSet?.Dispose();
+                canvasPoints?.Dispose();
             }
 
             disposed = true;
         }
         #endregion
-
     }
 }

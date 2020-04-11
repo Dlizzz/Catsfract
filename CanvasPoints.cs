@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI;
 using Microsoft.Graphics.Canvas;
+using CatsnetHelper;
 
 namespace Catsfract
 {
@@ -15,16 +16,15 @@ namespace Catsfract
 
     public class CanvasPoints: IDisposable
     {
-        private static readonly Color renderTransparent = new Color { A = 0, R = 0, G = 0, B = 0 };
-
         private bool disposed = false;
 
         private Size _sizeCanvas;
-        private Vector2 _origin;
+        private Point _origin;
         private double _scale;
 
         private readonly ICanvasResourceCreatorWithDpi renderResourceCreator;
         private ColorsCollection _colorScale;
+        private IComplexSet _pointsSet;
 
         private readonly ArrayPool<Color> colorArrayPool;
         private Color[] renderPixels;
@@ -32,21 +32,16 @@ namespace Catsfract
         private readonly ArrayPool<double> doubleArrayPool;
         private double[] renderValues;
 
-        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, ColorsCollection colorScale, Size sizeCanvas, Vector2 origin, double scale)
+        public CanvasPoints(ICanvasResourceCreatorWithDpi resourceCreator, Size sizeCanvas)
         {
-            renderResourceCreator = resourceCreator;
-
-            _colorScale = colorScale;
+            renderResourceCreator = resourceCreator ?? throw new ArgumentNullException(nameof(resourceCreator));
 
             colorArrayPool = ArrayPool<Color>.Shared;
             doubleArrayPool = ArrayPool<double>.Shared;
 
-            // Don't use public properties to avoid multiple calculation at construction time
-            _origin = origin;
-            if (scale <= 0) throw new ArgumentOutOfRangeException(nameof(scale), ((App)App.Current).AppResourceLoader.GetString("ValueNotStrictlyPositive"));
-            _scale = scale;
-            if (sizeCanvas.Width < 0 || sizeCanvas.Height < 0) throw new ArgumentOutOfRangeException(nameof(sizeCanvas), ((App)App.Current).AppResourceLoader.GetString("ValueNotPositive"));
             _sizeCanvas = sizeCanvas;
+            _origin = new Point(_sizeCanvas.Width / 2, _sizeCanvas.Height / 2); ;
+            _scale = 1;
 
             // Don't calculate within the constructor as the Worker thread is not yet implemented
             AllocateRenderTarget();
@@ -54,33 +49,21 @@ namespace Catsfract
 
         public CanvasRenderTarget RenderTarget { get; private set; }
 
-        public ColorsCollection ColorScale 
-        { 
-            get => _colorScale; 
-            set 
-            {
-                if (value == null) throw new ArgumentNullException(nameof(ColorScale));
-                _colorScale = value;
-                Render(); 
-            }   
-        }
-
-        public Size SizeCanvas 
-        { 
-            get => _sizeCanvas; 
-            set
-            {
-                if (value.Width < 0 || value.Height < 0) throw new ArgumentOutOfRangeException(nameof(SizeCanvas), ((App)App.Current).AppResourceLoader.GetString("ValueNotPositive"));
-                _sizeCanvas = value;
-                AllocateRenderTarget();
-                Calculate();
-                Render();
-            }
-        }
-
-        public Vector2 Origin
+        public void SetColorScale(ColorsCollection colorScale)
         {
-            // Origin is also modified by scaling
+            _colorScale = colorScale ?? throw new ArgumentNullException(nameof(colorScale));
+            Render();
+        }
+
+        public void SetPointsSet(IComplexSet pointsSet)
+        {
+            _pointsSet = pointsSet ?? throw new ArgumentNullException(nameof(pointsSet));
+            Calculate();
+            Render();
+        }
+
+        public Point Origin
+        {
             get => _origin;
             set
             {
@@ -90,46 +73,70 @@ namespace Catsfract
             }
         }
 
-        public Vector2 Center => new Vector2(Convert.ToSingle(_sizeCanvas.Width / 2), Convert.ToSingle(_sizeCanvas.Height / 2));
+        public Size SizeCanvas 
+        { 
+            get => _sizeCanvas; 
+            set
+            {
+                _sizeCanvas = value;
+                AllocateRenderTarget();
+                Calculate();
+                Render();
+            }
+        }
 
         public double Scale
         {
             get => _scale;
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Scale), ((App)App.Current).AppResourceLoader.GetString("ValueNotStrictlyPositive"));
-
-                // Transalte the origin to have the complex at the center of the canevas staying at the center
-                _origin.X = Convert.ToSingle((value - _scale) / value * Center.X + _scale / value * _origin.X);
-                _origin.Y = Convert.ToSingle((value - _scale) / value * Center.Y + _scale / value * _origin.Y);
-
+                if (value == 0) throw new ArgumentOutOfRangeException(nameof(Scale), ((App)App.Current).AppResourceLoader.GetString("ValueNotZero"));
                 _scale = value;
                 Calculate();
                 Render();
             }
         }
 
-        public int PointsCount => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
+        public void Zoom(Point center, double newScale)
+        {
+            // Transalte the origin to have the complex at the center of the canevas staying at the center
+            _origin = new Point(
+                (newScale - _scale) / newScale * center.X + _scale / newScale * _origin.X,
+                (newScale - _scale) / newScale * center.Y + _scale / newScale * _origin.Y);
+            _scale = newScale;
+            Calculate();
+            Render();
+        }
 
-        private void Calculate() => Parallel.For(0, PointsCount, Worker);
+        private int PointsCount => Convert.ToInt32(_sizeCanvas.Width * _sizeCanvas.Height);
+
+        private void Calculate()
+        {
+            if (_pointsSet == null) return;
+            Parallel.For(0, PointsCount, Worker);
+        }
 
         private void Worker(int index)
         {
             Complex c = ToComplex(index);
 
-            renderValues[index] = 
+            renderValues[index] = _pointsSet.PointSetWorker(c);
         }
 
         private void Render()
         {
-            Parallel.For(
-                0, 
-                PointsCount, 
-                (index) => 
-                    renderPixels[index] = (renderValues[index] == 0) 
-                    ? renderTransparent 
-                    : ColorScale.ScaleToColorInverse(renderValues[index])
-            );
+            if (_colorScale == null)
+            {
+                Parallel.For(0, PointsCount, (index) => renderPixels[index] = ColorsCollection.Transparent);
+            }
+            else
+            {
+                Parallel.For(0, PointsCount, (index) =>
+                    renderPixels[index] = (renderValues[index] == 0)
+                    ? ColorsCollection.Transparent
+                    : _colorScale.ScaleToColorInverse(renderValues[index]));
+            }
+
             RenderTarget.SetPixelColors(renderPixels);
         }
 
