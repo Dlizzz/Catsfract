@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
-using Windows.UI.Xaml;
+using Microsoft.Graphics.Canvas.UI;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using CatsHelpers;
 
@@ -24,9 +25,8 @@ namespace Catsfract
         }
 
 #pragma warning disable IDE0060, CA1801 // Supprimer le paramètre inutilisé
-        private void PointsSet_Loaded(object sender, RoutedEventArgs e)
+        private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
-            PointsSet.ScaleFactor = 0.005;
             PointsSet.SetColorScale(ColorScales.Viridis);
             PointsSet.SetWorker(juliaSet);
         }

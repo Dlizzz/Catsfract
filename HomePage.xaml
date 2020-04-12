@@ -10,6 +10,6 @@
     d:DesignWidth="800">
 
     <Grid x:Name="GrdHome">
-        <canvas:PointsSetControl x:Name="PointsSet" CanBeScrollAnchor="True" Loaded="PointsSet_Loaded" Background="Black" BackgroundSizing="OuterBorderEdge"/>
+        <canvas:PointsSetControl x:Name="PointsSet" CanBeScrollAnchor="True" Background="Black" BackgroundSizing="OuterBorderEdge" CreateResources="PointsSet_CreateResources" ScaleFactor="0.005"/>
     </Grid>
 </Page>
