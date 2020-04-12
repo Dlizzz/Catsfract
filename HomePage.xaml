@@ -2,19 +2,14 @@
     x:Class="Catsfract.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:Catsfract"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
-    mc:Ignorable="d" Background="White" Unloaded="PagHome_Unloaded">
+    xmlns:canvas="using:CatsControls"
+    mc:Ignorable="d"
+    d:DesignHeight="450"
+    d:DesignWidth="800">
 
     <Grid x:Name="GrdHome">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        <Grid x:Name="GrdCanvas" Grid.Column="1" Background="Black">
-            <canvas:CanvasControl x:Name="Canvas"  SizeChanged="Canvas_SizeChanged" CreateResources="Canvas_CreateResources" DoubleTapped="Canvas_DoubleTapped" Draw="Canvas_Draw" ManipulationMode="All" ManipulationDelta="Canvas_ManipulationDelta" PointerWheelChanged="Canvas_PointerWheelChanged" ClearColor="#00000000" CanBeScrollAnchor="True"/>
-        </Grid>
+        <canvas:PointsSetControl x:Name="PointsSet" CanBeScrollAnchor="True" Loaded="PointsSet_Loaded" Background="Black" BackgroundSizing="OuterBorderEdge"/>
     </Grid>
 </Page>

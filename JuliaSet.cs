@@ -5,17 +5,19 @@ using Windows.ApplicationModel.Resources;
 
 namespace Catsfract
 {
-    class MandelbrotSet: IPointsSet 
+    class JuliaSet : IPointsSet
     {
-        private int _threshold;
         private readonly ResourceLoader resourceLoader;
+        private int _threshold;
 
-
-        public MandelbrotSet(int threshold)
+        public JuliaSet(int threshold, Complex seed)
         {
             Threshold = threshold;
             resourceLoader = ResourceLoader.GetForCurrentView("ErrorMessages");
+            Seed = seed;
         }
+
+        public Complex Seed { get; set;  }
 
         public int Threshold
         {
@@ -30,8 +32,8 @@ namespace Catsfract
         public double PointSetWorker(Complex c)
         {
             int n = 0;
-            double za = 0;
-            double zb = 0;
+            double za = c.Real;
+            double zb = c.Imaginary;
             double zasq, zbsq, magnsq;
 
             while (n < _threshold)
@@ -40,8 +42,8 @@ namespace Catsfract
                 zbsq = zb * zb;
 
                 // new za must be calculated after new zb, as new zb is calculated from za
-                zb = 2 * za * zb + c.Imaginary;
-                za = zasq - zbsq + c.Real;
+                zb = 2 * za * zb + Seed.Imaginary;
+                za = zasq - zbsq + Seed.Real;
 
                 magnsq = za * za + zb * zb;
 

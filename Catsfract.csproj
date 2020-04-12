@@ -122,10 +122,10 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CanvasPoints.cs" />
     <Compile Include="HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="JuliaSet.cs" />
     <Compile Include="MandelbrotSet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -164,7 +164,7 @@
       <Version>6.2.10</Version>
     </PackageReference>
     <PackageReference Include="Win2D.uwp">
-      <Version>1.24.0</Version>
+      <Version>1.25.0</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -176,13 +176,13 @@
     <Folder Include="Assets\Images\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CatsnetControls\CatsnetControls.csproj">
+    <ProjectReference Include="..\CatsControls\CatsControls.csproj">
       <Project>{082675a3-05e5-4d16-867d-c43c3211283e}</Project>
-      <Name>CatsnetControls</Name>
+      <Name>CatsControls</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CatsnetHelper\CatsnetHelper.csproj">
+    <ProjectReference Include="..\CatsHelpers\CatsHelpers.csproj">
       <Project>{2c603580-7b50-4787-94bc-5d0c81c30443}</Project>
-      <Name>CatsnetHelper</Name>
+      <Name>CatsHelpers</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

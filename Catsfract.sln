@@ -5,9 +5,9 @@ VisualStudioVersion = 16.0.29920.165
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Catsfract", "Catsfract.csproj", "{723E876E-CE81-44A9-8238-0C8B34049EF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatsnetControls", "..\CatsnetControls\CatsnetControls.csproj", "{082675A3-05E5-4D16-867D-C43C3211283E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatsControls", "..\CatsControls\CatsControls.csproj", "{082675A3-05E5-4D16-867D-C43C3211283E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatsnetHelper", "..\CatsnetHelper\CatsnetHelper.csproj", "{2C603580-7B50-4787-94BC-5D0C81C30443}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CatsHelpers", "..\CatsHelpers\CatsHelpers.csproj", "{2C603580-7B50-4787-94BC-5D0C81C30443}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
