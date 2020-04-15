@@ -2,7 +2,7 @@
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using CatsHelpers;
+using CatsHelpers.ColorMaps;
 
 
 // Pour plus d'informations sur le modèle d'élément Page vierge, consultez la page https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -27,8 +27,8 @@ namespace Catsfract
 #pragma warning disable IDE0060, CA1801 // Supprimer le paramètre inutilisé
         private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
-            PointsSet.SetColorScale(ColorScales.Viridis);
-            PointsSet.SetWorker(juliaSet);
+            PointsSet.SetColorScale(NamedColorMaps.Viridis);
+            PointsSet.SetWorker(mandelbrotSet);
         }
 #pragma warning restore IDE0060, CA1801 // Supprimer le paramètre inutilisé
     }

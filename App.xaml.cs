@@ -1,7 +1,6 @@
 ﻿using System;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
-using Windows.ApplicationModel.Resources;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
@@ -13,8 +12,6 @@ namespace Catsfract
     /// </summary>
     sealed partial class App : Application
     {
-        public ResourceLoader AppResourceLoader { get; private set; }
-
         /// <summary>
         /// Initialise l'objet d'application de singleton.  Il s'agit de la première ligne du code créé
         /// à être exécutée. Elle correspond donc à l'équivalent logique de main() ou WinMain().
@@ -42,8 +39,6 @@ namespace Catsfract
                 rootFrame = new Frame();
 
                 rootFrame.NavigationFailed += OnNavigationFailed;
-
-                AppResourceLoader = ResourceLoader.GetForCurrentView("ErrorMessages");
 
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {
