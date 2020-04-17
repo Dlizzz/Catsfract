@@ -7,41 +7,41 @@ namespace Catsfract
 {
     class MandelbrotSet: IPointsSet 
     {
-        private int _threshold;
-        private readonly ResourceLoader resourceLoader;
+        private int _maxValue;
+        // Get resource loader for the library
+        private readonly ResourceLoader resourceLoader = ResourceLoader.GetForCurrentView("ErrorMessages");
 
 
-        public MandelbrotSet(int threshold)
+        public MandelbrotSet(int maxValue)
         {
-            Threshold = threshold;
-            resourceLoader = ResourceLoader.GetForCurrentView("ErrorMessages");
+            MaxValue = maxValue;
         }
 
-        public int Threshold
+        public int MaxValue
         {
-            get => _threshold;
+            get => _maxValue;
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Threshold), resourceLoader.GetString("ValueNotStrictlyPositive"));
-                _threshold = value;
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(MaxValue), resourceLoader.GetString("ValueNotStrictlyPositive"));
+                _maxValue = value;
             }
         }
 
-        public double PointSetWorker(Complex c)
+        public int PointSetWorker(double ca, double cb)
         {
             int n = 0;
             double za = 0;
             double zb = 0;
             double zasq, zbsq, magnsq;
 
-            while (n < _threshold)
+            while (n < _maxValue)
             {
                 zasq = za * za;
                 zbsq = zb * zb;
 
                 // new za must be calculated after new zb, as new zb is calculated from za
-                zb = 2 * za * zb + c.Imaginary;
-                za = zasq - zbsq + c.Real;
+                zb = 2 * za * zb + cb;
+                za = zasq - zbsq + ca;
 
                 magnsq = za * za + zb * zb;
 
@@ -49,8 +49,8 @@ namespace Catsfract
 
                 n++;
             }
-
-            return (double)(_threshold - n) / _threshold;
+            // n from 0 to _maxValue (included)
+            return n;
         }
     }
 }

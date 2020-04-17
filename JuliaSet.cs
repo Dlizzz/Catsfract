@@ -8,42 +8,50 @@ namespace Catsfract
     class JuliaSet : IPointsSet
     {
         private readonly ResourceLoader resourceLoader;
-        private int _threshold;
+        private int _maxValue;
+        private double _sa, _sb;
 
-        public JuliaSet(int threshold, Complex seed)
+        public JuliaSet(int maxValue, (double, double) seed)
         {
-            Threshold = threshold;
+            MaxValue = maxValue;
             resourceLoader = ResourceLoader.GetForCurrentView("ErrorMessages");
-            Seed = seed;
+            (_sa, _sb) = seed;
         }
 
-        public Complex Seed { get; set;  }
-
-        public int Threshold
+        public (double, double) Seed
         {
-            get => _threshold;
+            get => (_sa, _sb);
             set
             {
-                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(Threshold), resourceLoader.GetString("ValueNotStrictlyPositive"));
-                _threshold = value;
+                (_sa, _sb) = value;
             }
         }
 
-        public double PointSetWorker(Complex c)
+        public int MaxValue
+        {
+            get => _maxValue;
+            set
+            {
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(MaxValue), resourceLoader.GetString("ValueNotStrictlyPositive"));
+                _maxValue = value;
+            }
+        }
+
+        public int PointSetWorker(double ca, double cb)
         {
             int n = 0;
-            double za = c.Real;
-            double zb = c.Imaginary;
+            double za = ca;
+            double zb = cb;
             double zasq, zbsq, magnsq;
 
-            while (n < _threshold)
+            while (n < _maxValue)
             {
                 zasq = za * za;
                 zbsq = zb * zb;
 
                 // new za must be calculated after new zb, as new zb is calculated from za
-                zb = 2 * za * zb + Seed.Imaginary;
-                za = zasq - zbsq + Seed.Real;
+                zb = 2 * za * zb + _sb;
+                za = zasq - zbsq + _sa;
 
                 magnsq = za * za + zb * zb;
 
@@ -51,8 +59,8 @@ namespace Catsfract
 
                 n++;
             }
-
-            return (double)(_threshold - n) / _threshold;
+            // n from 0 to _maxValue (included)
+            return n;
         }
     }
 }

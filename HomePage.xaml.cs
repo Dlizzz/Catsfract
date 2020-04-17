@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Microsoft.Graphics.Canvas.UI;
+﻿using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using CatsHelpers.ColorMaps;
@@ -21,13 +20,13 @@ namespace Catsfract
         {
             InitializeComponent();
             mandelbrotSet = new MandelbrotSet(100);
-            juliaSet = new JuliaSet(100, new Complex(-0.4, 0.6));
+            juliaSet = new JuliaSet(200, (-0.4, 0.6));
         }
 
 #pragma warning disable IDE0060, CA1801 // Supprimer le paramètre inutilisé
         private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
-            PointsSet.SetColorScale(NamedColorMaps.Viridis);
+            PointsSet.SetColorMap(NamedColorMaps.Viridis);
             PointsSet.SetWorker(mandelbrotSet);
         }
 #pragma warning restore IDE0060, CA1801 // Supprimer le paramètre inutilisé
