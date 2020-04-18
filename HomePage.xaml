@@ -7,9 +7,28 @@
     xmlns:canvas="using:CatsControls"
     mc:Ignorable="d"
     d:DesignHeight="450"
-    d:DesignWidth="800" Unloaded="PagHome_Unloaded">
-
-    <Grid x:Name="GrdHome">
+    d:DesignWidth="800" Unloaded="PagHome_Unloaded" PointerEntered="PagHome_PointerEntered" PointerExited="PagHome_PointerExited" PointerMoved="PagHome_PointerMoved">
+    
+    <Page.Resources>
+        <Storyboard x:Name="ShowMenuBarStoryboard">
+            <FadeInThemeAnimation Storyboard.TargetName="MenuBar" />
+        </Storyboard>
+        <Storyboard x:Name="MoveAndShowMenuBarStoryboard">
+            <FadeInThemeAnimation Storyboard.TargetName="MenuBar" />
+            <RepositionThemeAnimation Storyboard.TargetName="MenuBar" FromVerticalOffset="200"/>
+        </Storyboard>
+        <Storyboard x:Name="HideMenuBarStoryboard">
+            <FadeOutThemeAnimation Storyboard.TargetName="MenuBar" />
+        </Storyboard>
+    </Page.Resources>
+    
+    <Grid x:Name="GrdHome" ManipulationMode="All">
         <canvas:PointsSetControl x:Name="PointsSet" CanBeScrollAnchor="True" Background="Black" BackgroundSizing="OuterBorderEdge" CreateResources="PointsSet_CreateResources" ScaleFactor="0.005"/>
+        <Grid x:Name="MenuBar" Background="{ThemeResource AppBarBackgroundThemeBrush}" Margin="50,50,50,50" VerticalAlignment="Bottom" Height="50" CornerRadius="7,7,7,7" Canvas.ZIndex="100" Width="400" HorizontalAlignment="Center" Padding="5,0,5,0" Opacity="0.75" Visibility="Visible" RequestedTheme="Default">
+            <Grid.Shadow>
+                <ThemeShadow/>
+            </Grid.Shadow>
+            <Button Content="Button" VerticalAlignment="Stretch" HorizontalAlignment="Center" Width="40" Background="{ThemeResource AppBarItemBackgroundThemeBrush}" Click="Button_Click"/>
+        </Grid>
     </Grid>
 </Page>
