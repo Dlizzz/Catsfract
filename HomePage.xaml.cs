@@ -1,5 +1,7 @@
-﻿using Microsoft.Graphics.Canvas.UI;
+﻿using System;
+using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using CatsHelpers.ColorMaps;
 
@@ -15,6 +17,8 @@ namespace Catsfract
     {
         private readonly MandelbrotSet mandelbrotSet;
         private readonly JuliaSet juliaSet;
+        private ColorMap colorMap;
+        private DispatcherTimer dispatcherTimer;
 
         public MainPage()
         {
@@ -26,8 +30,29 @@ namespace Catsfract
 #pragma warning disable IDE0060, CA1801 // Supprimer le paramètre inutilisé
         private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
         {
-            PointsSet.SetColorMap(NamedColorMaps.Viridis);
+            colorMap = NamedColorMaps.Heat;
+            PointsSet.SetColorMap(colorMap);
             PointsSet.SetWorker(mandelbrotSet);
+            SetTimer();
+        }
+
+        private void SetTimer()
+        {
+            dispatcherTimer = new DispatcherTimer();
+            dispatcherTimer.Tick += DispatcherTimer_Tick;
+            dispatcherTimer.Interval = new TimeSpan(5000000);
+            dispatcherTimer.Start();
+
+        }
+
+        private void DispatcherTimer_Tick(object sender, object e)
+        {
+            colorMap.Inversed = !colorMap.Inversed;
+        }
+
+        private void PagHome_Unloaded(object sender, RoutedEventArgs e)
+        {
+            dispatcherTimer.Stop();
         }
 #pragma warning restore IDE0060, CA1801 // Supprimer le paramètre inutilisé
     }

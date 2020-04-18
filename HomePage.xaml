@@ -7,7 +7,7 @@
     xmlns:canvas="using:CatsControls"
     mc:Ignorable="d"
     d:DesignHeight="450"
-    d:DesignWidth="800">
+    d:DesignWidth="800" Unloaded="PagHome_Unloaded">
 
     <Grid x:Name="GrdHome">
         <canvas:PointsSetControl x:Name="PointsSet" CanBeScrollAnchor="True" Background="Black" BackgroundSizing="OuterBorderEdge" CreateResources="PointsSet_CreateResources" ScaleFactor="0.005"/>
