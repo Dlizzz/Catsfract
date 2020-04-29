@@ -182,7 +182,9 @@ namespace Catsfract
 
         private void ToggleMenuParamPanel_Click(object sender, RoutedEventArgs args)
         {
+            AppBarToggleButton button = sender as AppBarToggleButton;
 
+            ParamPanel.IsPaneOpen = (bool)button.IsChecked;
         }
 #pragma warning restore IDE0060, CA1801 // Supprimer le paramètre inutilisé
     }
