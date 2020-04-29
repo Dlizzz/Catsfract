@@ -3,36 +3,16 @@
 namespace Catsfract
 {
     /// <summary>
-    /// Implement the points set worker for a Julia set using the specific seed (real, imaginary)
+    /// Implement the points set worker for a Tricorn set
     /// </summary>
-    class JuliaSet : PointsSet, IPointsSet
+    class TricornSet : PointsSet, IPointsSet 
     {
-        // Backing store for the seed as independant double to optimize calculation
-        private double _sa, _sb;
-
         /// <summary>
-        /// Create the Julia set, with the seed and with min and max threshold for calculation
+        /// Create the Tricornbrot set
         /// </summary>
         /// <param name="minThreshold">Minimum value of Threshold</param>
         /// <param name="maxThreshold">Maximum value of Threshold</param>
-        /// <param name="seed">The complex seed used for the Julia set</param>
-        public JuliaSet(int minThreshold, int maxThreshold, (double, double) seed) : base(minThreshold, maxThreshold)
-        {
-            //Store the seed as independant double to optimize calculation
-            (_sa, _sb) = seed;
-        }
-
-        /// <summary>
-        /// The complex seed used for the Julia set. Must be provided as a tuple of double to optimize calculation.  
-        /// </summary>
-        public (double, double) Seed
-        {
-            get => (_sa, _sb);
-            set
-            {
-                (_sa, _sb) = value;
-            }
-        }
+        public TricornSet(int minThreshold, int maxThreshold) : base(minThreshold, maxThreshold) { }
 
         /// <summary>
         /// Worker function to calculte the points value
@@ -43,8 +23,8 @@ namespace Catsfract
         public int PointSetWorker(double ca, double cb)
         {
             int n = 0;
-            double za = ca;
-            double zb = cb;
+            double za = 0;
+            double zb = 0;
             double zasq, zbsq, magnsq;
 
             while (n < threshold)
@@ -52,10 +32,11 @@ namespace Catsfract
                 zasq = za * za;
                 zbsq = zb * zb;
 
-                // Julia set : For each Z in the complex plan, Zn+1 = Zn² + Seed 
+                // Tricorn set : For each C in the complex plan, Zn+1 = bar(Zn)² + C, with Z0 = 0
+                // bar(Z) = a - ib, for Z = a + ib 
                 // new za must be calculated after new zb, as new zb is calculated from za
-                zb = 2 * za * zb + _sb;
-                za = zasq - zbsq + _sa;
+                zb = -2 * za * zb + cb;
+                za = zasq - zbsq + ca;
 
                 // new z magnitude squared
                 magnsq = za * za + zb * zb;

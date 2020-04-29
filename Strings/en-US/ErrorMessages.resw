@@ -137,4 +137,12 @@
     <value>Value can't be equal to zero.</value>
     <comment>Property setter / getter error message</comment>
   </data>
+  <data name="MaxValueNotGreaterThanMinValue" xml:space="preserve">
+    <value>Maximum value must be strictly greater than minimum value.</value>
+    <comment>Property setter error message</comment>
+  </data>
+  <data name="ValueNotBetweenMinMax" xml:space="preserve">
+    <value>Value must be between minimum and maximum value. </value>
+    <comment>Property setter error message</comment>
+  </data>
 </root>
