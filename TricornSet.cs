@@ -27,7 +27,7 @@ namespace Catsfract
             double zb = 0;
             double zasq, zbsq, magnsq;
 
-            while (n < threshold)
+            while (n < _threshold)
             {
                 zasq = za * za;
                 zbsq = zb * zb;
