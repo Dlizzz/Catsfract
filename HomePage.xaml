@@ -1,16 +1,21 @@
 <Page
+    x:Class="Catsfract.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:canvas="using:CatsControls.PointsSet"
+    xmlns:colormap="using:CatsHelpers.ColorMaps"
     xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-    xmlns:canvas="using:CatsControls"
-    xmlns:sys="using:System"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Catsfract"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     x:Name="PagHome"
-    x:Class="Catsfract.MainPage"
-    mc:Ignorable="d"
     d:DesignHeight="450"
-    d:DesignWidth="800" Unloaded="PagHome_Unloaded" PointerEntered="PagHome_PointerEntered" PointerMoved="PagHome_PointerMoved">
+    d:DesignWidth="800"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    PointerEntered="PagHome_PointerEntered"
+    PointerMoved="PagHome_PointerMoved"
+    Unloaded="PagHome_Unloaded"
+    mc:Ignorable="d">
 
     <Page.Resources>
         <Storyboard x:Name="ShowMenuBarStoryboard">
@@ -19,63 +24,215 @@
         <Storyboard x:Name="HideMenuBarStoryboard">
             <FadeOutThemeAnimation Storyboard.TargetName="ShadowMenuBar" />
         </Storyboard>
+        <local:BooleanToVisibility x:Key="ConverterBooleanToVisibility" />
+        <Style TargetType="Slider">
+            <Setter Property="ManipulationMode" Value="System"/>
+            <Setter Property="TickPlacement" Value="None"/>
+            <Setter Property="Foreground" Value="{ThemeResource AppBarItemForegroundThemeBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
     </Page.Resources>
-    <SplitView x:Name="ParamPanel" DisplayMode="Inline" OpenPaneLength="250" CompactPaneLength="0">
+
+    <SplitView
+        x:Name="ParamPanel"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        Foreground="{ThemeResource DefaultTextForegroundThemeBrush}"
+        FontFamily="Segoe UI"
+        CompactPaneLength="0"
+        DisplayMode="Overlay"
+        IsPaneOpen="{x:Bind (x:Boolean)ToggleMenuParamPanel.IsChecked, Mode=OneWay}"
+        OpenPaneLength="300">
         <SplitView.Pane>
-            <StackPanel>
-                <TextBlock Text="Fractal set"/>
-                <ComboBox x:Name="PointsSetsList" IsEditable="False" ItemsSource="{x:Bind PointsSets}" SelectedIndex="0" SelectedValuePath="Value" DisplayMemberPath="Key" Margin="5,4,5,0" SelectionChanged="PointsSetsList_SelectionChanged" HorizontalAlignment="Stretch" />
+            <StackPanel
+                x:Name="MenuParamPanel"
+                Padding="5,5,5,5"
+                Background="{ThemeResource AppBarBackgroundThemeBrush}"
+                Spacing="5">
+                <TextBlock
+                    Text="Color map"
+                    FontWeight="Bold"/>
+                <ComboBox
+                    x:Name="ColorMapsList"
+                    HorizontalAlignment="Stretch"
+                    BorderThickness="0,0,0,0"
+                    DisplayMemberPath="Key"
+                    IsEditable="False"
+                    ItemsSource="{x:Bind colormap:NamedColorMaps.ColorMaps}"
+                    SelectedIndex="0"
+                    SelectedValuePath="Value"
+                    SelectionChanged="ColorMapsList_SelectionChanged" />
+                <TextBlock
+                    FontWeight="Bold"
+                    Text="Fractal set" />
+                <ComboBox
+                    x:Name="PointsSetsList"
+                    HorizontalAlignment="Stretch"
+                    BorderThickness="0,0,0,0"
+                    DisplayMemberPath="Key"
+                    IsEditable="False"
+                    ItemsSource="{x:Bind PointsSets}"
+                    SelectedIndex="0"
+                    SelectedValuePath="Value"
+                    SelectionChanged="PointsSetsList_SelectionChanged" />
             </StackPanel>
         </SplitView.Pane>
         <SplitView.Content>
             <Grid x:Name="GrdHome" ManipulationMode="All">
                 <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition Height="3*"/>
-                    <RowDefinition/>
+                    <RowDefinition />
+                    <RowDefinition Height="3*" />
+                    <RowDefinition />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="3*"/>
-                    <ColumnDefinition/>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="750" />
+                    <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
-                <canvas:PointsSetControl x:Name="PointsSet" Canvas.ZIndex="0" CanBeScrollAnchor="True" Background="Black" BackgroundSizing="OuterBorderEdge" CreateResources="PointsSet_CreateResources" Grid.RowSpan="3" Grid.ColumnSpan="3" Origin="400,400" Resolution="0" ScaleFactor="0.005"/>
+                <canvas:PointsSetControl
+                    x:Name="PointsSet"
+                    Grid.RowSpan="3"
+                    Grid.ColumnSpan="3"
+                    Background="Black"
+                    BackgroundSizing="OuterBorderEdge"
+                    CanBeScrollAnchor="True"
+                    Canvas.ZIndex="0"
+                    CreateResources="PointsSet_CreateResources"
+                    Origin="400,400"
+                    Rendered="PointsSet_Rendered"
+                    ScaleFactor="0.005"
+                    StartRendering="PointsSet_StartRendering" />
 
-                <Grid x:Name="ShadowMenuBar" Grid.Row="2" Grid.Column="1" Canvas.ZIndex="0" Padding="10,10,10,10" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="70" MaxWidth="706" Visibility="Visible">
-                    <controls:DropShadowPanel x:Name="DropShadow" Canvas.ZIndex="0" VerticalAlignment="Top" 
-                                      BlurRadius="20"
-                                      OffsetX="0"
-                                      OffsetY="0"
-                                      OffsetZ="32"
-                                      ShadowOpacity="0.6"
-                                      Color="Black">
-                        <Rectangle x:Name="DropShadowMask" Canvas.ZIndex="10" 
-                           Fill="{x:Bind MenuBar.Background, Mode=OneWay}"
-                           RadiusX="7"
-                           RadiusY="7"/>
+                <Grid
+                    x:Name="ShadowMenuBar"
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Height="60"
+                    Padding="10,10,10,10"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Canvas.ZIndex="0"
+                    Opacity="{x:Bind MenuBar.Opacity, Mode=OneWay}"
+                    PointerEntered="ShadowMenuBar_PointerEntered"
+                    PointerExited="ShadowMenuBar_PointerExited"
+                    Visibility="Visible">
+                    <controls:DropShadowPanel
+                        x:Name="DropShadow"
+                        VerticalAlignment="Top"
+                        BlurRadius="20"
+                        Canvas.ZIndex="0"
+                        OffsetX="0"
+                        OffsetY="0"
+                        OffsetZ="16"
+                        ShadowOpacity="0.6"
+                        Color="Black">
+                        <Rectangle
+                            x:Name="DropShadowMask"
+                            Canvas.ZIndex="10"
+                            Fill="{x:Bind MenuBar.Background, Mode=OneWay}"
+                            RadiusX="5"
+                            RadiusY="5" />
                     </controls:DropShadowPanel>
-                    <Grid x:Name="GridMenuBar" Canvas.ZIndex="20" Padding="5,5,5,5" CornerRadius="7,7,7,7" VerticalAlignment="Stretch"  HorizontalAlignment="Stretch" Background="{x:Bind MenuBar.Background, Mode=OneWay}" SizeChanged="GridMenuBar_SizeChanged">
-                        <CommandBar x:Name="MenuBar" Canvas.ZIndex="40" Background="{ThemeResource AppBarBackgroundThemeBrush}" VerticalAlignment="Stretch"  HorizontalAlignment="Stretch">
-                            <AppBarToggleButton x:Name="ToggleMenuParamPanel" Click="ToggleMenuParamPanel_Click" Icon="Setting" IsCompact="True"/>
-                            <AppBarElementContainer HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Top" HorizontalAlignment="Stretch">
-                            </AppBarElementContainer>
-                            <AppBarElementContainer HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Top" HorizontalAlignment="Stretch">
-                                <Slider x:Name="ResolutionSlider" VerticalAlignment="Center" Foreground="{ThemeResource AppBarItemForegroundThemeBrush}" Width="200" Height="32" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="0" ManipulationMode="System" TickFrequency="1" TickPlacement="None" ValueChanged="ResolutionSlider_ValueChanged" Margin="5,4,5,0"/>
-                            </AppBarElementContainer>
-                            <AppBarButton x:Name="Reset" Click="Reset_Click" Icon="Refresh" IsCompact="True"/>
-                            <AppBarToggleButton x:Name="ToggleValues" Click="ToggleSatistics_Click" Icon="View" IsCompact="True"/>
-                            <AppBarButton x:Name="ButtonSave" Click="ButtonSave_Click" Icon="Camera" IsCompact="True"/>
-                            <AppBarToggleButton x:Name="ToggleFullScreen" Click="ToggleFullScreen_Click" Icon="FullScreen" IsCompact="True"/>
-                            <AppBarToggleButton x:Name="ToggleInversed" Click="ToggleInversed_Click" Icon="Switch" IsCompact="True"/>
-                        </CommandBar>
-                    </Grid>
+                    <StackPanel
+                        x:Name="MenuBar"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Stretch"
+                        Background="{ThemeResource SystemControlAcrylicElementBrush}"
+                        Canvas.ZIndex="20"
+                        CornerRadius="5,5,5,5"
+                        Loaded="MenuBar_Loaded"
+                        Opacity="0.7"
+                        Orientation="Horizontal"
+                        Spacing="0">
+                        <Border
+                            Padding="0,0,5,0"
+                            BorderBrush="{ThemeResource AppBarBorderThemeBrush}"
+                            BorderThickness="0,0,0,0">
+                            <TextBlock
+                                x:Name="TextFPS"
+                                Width="80"
+                                VerticalAlignment="Center"
+                                HorizontalTextAlignment="Right"
+                                Text="fps" />
+                        </Border>
+                        <AppBarToggleButton
+                            x:Name="ToggleMenuParamPanel"
+                            Width="40"
+                            Icon="Setting"
+                            IsChecked="{x:Bind ParamPanel.IsPaneOpen, Mode=OneWay}"
+                            IsCompact="True"
+                            ToolTipService.ToolTip="Parameters Menu" />
+                        <Slider
+                            x:Name="ResolutionSlider"
+                            Width="200"
+                            Margin="5,0,5,0"
+                            VerticalAlignment="Center"
+                            LargeChange="10"
+                            SmallChange="1"
+                            Maximum="100"
+                            Minimum="0"
+                            StepFrequency="1"
+                            ToolTipService.ToolTip="Calculation Resolution"
+                            Value="{x:Bind PointsSet.Resolution, Mode=TwoWay}" />
+                        <AppBarButton
+                            x:Name="Reset"
+                            Width="40"
+                            Click="Reset_Click"
+                            Icon="Refresh"
+                            IsCompact="True"
+                            ToolTipService.ToolTip="Reset Points Set" />
+                        <AppBarToggleButton
+                            x:Name="ToggleValues"
+                            Width="40"
+                            Icon="View"
+                            IsCompact="True"
+                            ToolTipService.ToolTip="Show Values" />
+                        <AppBarButton
+                            x:Name="ButtonSave"
+                            Width="40"
+                            Click="ButtonSave_Click"
+                            Icon="Camera"
+                            IsCompact="True"
+                            ToolTipService.ToolTip="Save Image" />
+                        <AppBarToggleButton
+                            x:Name="ToggleFullScreen"
+                            Width="40"
+                            Click="ToggleFullScreen_Click"
+                            Icon="FullScreen"
+                            IsCompact="True"
+                            ToolTipService.ToolTip="Toggle Full Screen" />
+                        <AppBarToggleButton
+                            x:Name="ToggleInversed"
+                            Width="40"
+                            Click="ToggleInversed_Click"
+                            Icon="Switch"
+                            IsCompact="True"
+                            ToolTipService.ToolTip="Inverse Color Map" />
+                    </StackPanel>
                 </Grid>
-                <Border x:Name="BorderValues" CornerRadius="5,5,5,5" Margin="5,5,5,5" Opacity="0.2" IsTapEnabled="False" IsRightTapEnabled="False" IsHoldingEnabled="False" IsDoubleTapEnabled="False" Visibility="Collapsed">
-                    <Border.Background>
-                        <AcrylicBrush TintColor="Gray" Opacity="1" FallbackColor="Gray" TintOpacity="1"/>
-                    </Border.Background>
-                    <TextBlock x:Name="TextValues" HorizontalAlignment="Stretch" Text="TextBlock" TextWrapping="Wrap" VerticalAlignment="Stretch"/>
+
+                <Border
+                    x:Name="BorderValues"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    Margin="5,5,5,5"
+                    Padding="5,5,5,5"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Background="{ThemeResource SystemControlAcrylicWindowBrush}"
+                    CornerRadius="5,5,5,5"
+                    IsDoubleTapEnabled="False"
+                    IsHoldingEnabled="False"
+                    IsRightTapEnabled="False"
+                    IsTapEnabled="False"
+                    Opacity="0.8"
+                    Visibility="{x:Bind ToggleValues.IsChecked, Converter={StaticResource ConverterBooleanToVisibility}, Mode=TwoWay}">
+                    <TextBlock
+                        x:Name="TextValues"
+                        Foreground="{ThemeResource DefaultTextForegroundThemeBrush}"
+                        Text=""
+                        TextAlignment="Right"
+                        TextWrapping="Wrap" />
                 </Border>
             </Grid>
         </SplitView.Content>

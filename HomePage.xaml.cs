@@ -1,41 +1,58 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Data;
 using Windows.UI.ViewManagement;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.Foundation;
-using CatsHelpers.ColorMaps;
-using CatsControls;
 using Windows.UI.Input;
-using System.Globalization;
+using Windows.UI.Core;
+using Windows.UI.Text;
+using Windows.UI.Xaml.Controls.Primitives;
+using Windows.ApplicationModel.Resources;
+using CatsHelpers.ColorMaps;
+using CatsControls.PointsSet;
+using System.Numerics;
 
 namespace Catsfract
 {
+    public class BooleanToVisibility : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return (bool)value ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            return (Visibility)value == Visibility.Visible;
+        }
+    }
+
     /// <summary>
     /// Main page of the application, used as the starting point
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private ColorMap colorMap;
+        private static readonly ResourceLoader resourceLoader = ResourceLoader.GetForCurrentView("Resources");
+
         private DispatcherTimer menuBarTimer;
         private bool menuBarIsVisible;
-        private List<AppBarToggleButton> appBarToggleButtonsColorMap;
+        private bool pointerOverMenuBar = false;
+        private CoreCursor currentCursor;
+        private readonly CoreCursor waitCursor = new CoreCursor(CoreCursorType.Wait, 0);
+        private int menuPanelControlCount = 0;
 
-        private readonly Dictionary<string, IPointsSet> PointsSets = new Dictionary<string, IPointsSet>
+        // Dictionarry with all the points sets linked to combobox in param pane
+        private readonly Dictionary<string, IPointsSetWorker> PointsSets = new Dictionary<string, IPointsSetWorker>
         {
             { "Mandelbrot", new MandelbrotSet(100, 5000) },
+            { "Generalized Mandelbrot", new GeneralizedMandelbrotSet(100, 5000) },
             { "Tricorn", new TricornSet(100, 5000) },
-            { "Julia 1", new JuliaSet(100, 5000, (-0.4, 0.6)) },
-            { "Julia 2", new JuliaSet(100, 5000, (0.3, 0.5)) },
-            { "Julia 3", new JuliaSet(100, 5000, (0.285, 0.01)) },
-            { "Julia 4", new JuliaSet(100, 5000, (-1.417022285618, 0.0099534)) },
-            { "Julia 5", new JuliaSet(100, 5000, (-0.038088, 0.9754633)) },
-            { "Julia 6", new JuliaSet(100, 5000, (-1.476, 0)) },
-            { "Julia 7", new JuliaSet(100, 5000, (-0.8, 0.156)) }
+            { "Julia", new JuliaSet(100, 5000) }
         };
 
         public MainPage()
@@ -44,73 +61,45 @@ namespace Catsfract
         }
 
 #pragma warning disable IDE0060, CA1801 // Supprimer le paramètre inutilisé
-        private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
+        private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs e)
         {
             // MenuBar timer
             menuBarTimer = new DispatcherTimer();
             menuBarTimer.Tick += MenuBarTimer_Tick;
             menuBarTimer.Interval = new TimeSpan(0, 0, 3);
 
-            // Default colormap
-            colorMap = NamedColorMaps.Turbo;
-
-            // Populate command bar with named color maps
-            appBarToggleButtonsColorMap = new List<AppBarToggleButton>();
-            foreach (KeyValuePair<string, ColorMap> map in NamedColorMaps.ColorMaps)
-            {
-                AppBarToggleButton appBarToggleButton = new AppBarToggleButton
-                {
-                    Label = map.Key,
-                    // Check current default colormap
-                    IsChecked = (map.Value.Name == colorMap.Name)
-                };
-                appBarToggleButton.Checked += AppBarToggleButtonColorMap_Checked;
-                appBarToggleButtonsColorMap.Add(appBarToggleButton);
-                MenuBar.SecondaryCommands.Add(appBarToggleButton);
-            }
-          
             // Initialization
             menuBarIsVisible = true;
-            PointsSet.SetColorMap(colorMap);
-            PointsSet.SetWorker((IPointsSet)PointsSetsList.SelectedValue);
+            PointsSet.SetColorMap((ColorMap)ColorMapsList.SelectedValue);
+            SetWorker((PointsSetWorker)PointsSetsList.SelectedValue);
             menuBarTimer?.Start();
         }
 
-        private void AppBarToggleButtonColorMap_Checked(object sender, RoutedEventArgs args)
+        private void MenuBarTimer_Tick(object sender, object e)
         {
-            foreach (AppBarToggleButton button in appBarToggleButtonsColorMap) if ((AppBarToggleButton)sender != button) button.IsChecked = false;
-
-            colorMap = NamedColorMaps.ColorMaps[((AppBarToggleButton)sender).Label];
-            PointsSet.SetColorMap(colorMap);
-        }
-
-        private void MenuBarTimer_Tick(object sender, object args)
-        {
-            if (MenuBar.IsOpen || PointsSetsList.IsDropDownOpen || ResolutionSlider.FocusState == FocusState.Pointer) return;
-
-            if (menuBarIsVisible)
+            if (menuBarIsVisible && !pointerOverMenuBar)
             {
                 menuBarIsVisible = false;
                 HideMenuBarStoryboard.Begin();
             }
         }
 
-        private void PagHome_Unloaded(object sender, RoutedEventArgs args)
+        private void PagHome_Unloaded(object sender, RoutedEventArgs e)
         {
             if (menuBarTimer.IsEnabled) menuBarTimer.Stop();
         }
 
-        private void PagHome_PointerEntered(object sender, PointerRoutedEventArgs args)
+        private void PagHome_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
             if (!menuBarIsVisible)
             {
-                menuBarIsVisible = true; 
+                menuBarIsVisible = true;
                 ShowMenuBarStoryboard.Begin();
                 menuBarTimer?.Start();
             }
         }
 
-        private void PagHome_PointerMoved(object sender, PointerRoutedEventArgs args)
+        private void PagHome_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             if (!menuBarIsVisible)
             {
@@ -120,72 +109,146 @@ namespace Catsfract
                 menuBarTimer?.Start();
             }
 
-            if(BorderValues.Visibility == Visibility.Visible)
+            if (BorderValues.Visibility == Visibility.Visible)
             {
-                PointerPoint pointerPoint = args.GetCurrentPoint(PointsSet);
-                PointValues pointValues =  PointsSet.GetValues(pointerPoint.Position);
+                PointerPoint pointerPoint = e.GetCurrentPoint(PointsSet);
+                PointValues pointValues = PointsSet.GetValues(pointerPoint.Position);
 
                 TextValues.Text =
                     "Za: " + pointValues.PointReal.ToString("G", CultureInfo.InvariantCulture) + Environment.NewLine
                     + "Zb: " + pointValues.PointImaginary.ToString("G", CultureInfo.InvariantCulture) + Environment.NewLine
-                    + "Value: " + pointValues.PointValue.ToString("G", CultureInfo.InvariantCulture) + Environment.NewLine
-                    + "Time: " + pointValues.ExecutionTime.ToString("G", CultureInfo.InvariantCulture);
+                    + "Value: " + pointValues.PointValue.ToString("G", CultureInfo.InvariantCulture);
             }
         }
 
-        private void ButtonSave_Click(object sender, RoutedEventArgs args)
+        private void ButtonSave_Click(object sender, RoutedEventArgs e)
         {
             PointsSet.SaveImageFileAsync();
         }
 
-        private void ToggleInversed_Click(object sender, RoutedEventArgs args)
+        private void ToggleInversed_Click(object sender, RoutedEventArgs e)
         {
+            var colorMap = (ColorMap)ColorMapsList.SelectedValue;
+
             colorMap.Inversed = !colorMap.Inversed;
         }
 
-        private void ToggleFullScreen_Click(object sender, RoutedEventArgs args)
+        private void ToggleFullScreen_Click(object sender, RoutedEventArgs e)
         {
             var view = ApplicationView.GetForCurrentView();
             if (view.IsFullScreenMode) view.ExitFullScreenMode();
             else view.TryEnterFullScreenMode();
         }
 
-        private void GridMenuBar_SizeChanged(object sender, SizeChangedEventArgs args)
+        private void Reset_Click(object sender, RoutedEventArgs e) => PointsSet.Reset();
+
+        private void PointsSetsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            DropShadowMask.Width = GridMenuBar.ActualWidth;
-            DropShadowMask.Height = GridMenuBar.ActualHeight;
+            SetWorker((PointsSetWorker)PointsSetsList.SelectedValue);
         }
 
-        private void ResolutionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs args)
+        private void ColorMapsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            PointsSet.Resolution = args.NewValue;
+            var colorMap = (ColorMap)ColorMapsList.SelectedValue;
+
+            PointsSet.SetColorMap(colorMap);
         }
 
-        private void Reset_Click(object sender, RoutedEventArgs args)
+        private void MenuBar_Loaded(object sender, RoutedEventArgs e)
         {
-            PointsSet.Origin = new Point(PointsSet.ActualWidth / 2, PointsSet.ActualHeight / 2);
-            PointsSet.ScaleFactor = 0.005;
-            ResolutionSlider.Value = ResolutionSlider.Minimum;
+            DropShadowMask.Width = MenuBar.ActualWidth;
+            DropShadowMask.Height = MenuBar.ActualHeight;
+            MenuBar.MinWidth = MenuBar.ActualWidth;
         }
 
-        private void PointsSetsList_SelectionChanged(object sender, SelectionChangedEventArgs args)
+        private void ShadowMenuBar_PointerEntered(object sender, PointerRoutedEventArgs e) => pointerOverMenuBar = true;
+
+        private void ShadowMenuBar_PointerExited(object sender, PointerRoutedEventArgs e) => pointerOverMenuBar = false;
+
+        private void PointsSet_Rendered(object sender, RenderEventArgs e)
         {
-            PointsSet.SetWorker((IPointsSet)PointsSetsList.SelectedValue);
+            if (TextFPS != null)
+            {
+                if (e.FramesPerSecond > 1000) TextFPS.Text = resourceLoader.GetString("MaxFPS");
+                else TextFPS.Text = e.FramesPerSecond.ToString("F3", CultureInfo.InvariantCulture) + " fps";
+            }
+            // Restore cursor
+            Window.Current.CoreWindow.PointerCursor = currentCursor;
         }
 
-        private void ToggleSatistics_Click(object sender, RoutedEventArgs args)
+        private void PointsSet_StartRendering(object sender, EventArgs e)
         {
-            AppBarToggleButton button = sender as AppBarToggleButton;
-
-            BorderValues.Visibility = (bool)button.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+            // Cache the cursor set before pointer enter on button.
+            currentCursor = Window.Current.CoreWindow.PointerCursor;
+            // Set wait cursor.
+            Window.Current.CoreWindow.PointerCursor = waitCursor;
         }
 
-        private void ToggleMenuParamPanel_Click(object sender, RoutedEventArgs args)
+        private void SetWorker(PointsSetWorker worker)
         {
-            AppBarToggleButton button = sender as AppBarToggleButton;
+            // Remove previous controls
+            for (int i = 0; i < menuPanelControlCount; i++) MenuParamPanel.Children.RemoveAt(MenuParamPanel.Children.Count - 1);
 
-            ParamPanel.IsPaneOpen = (bool)button.IsChecked;
+            menuPanelControlCount = 0;
+            foreach (KeyValuePair<string, PointsSetParameter> parameter in worker.Parameters)
+            {
+                if (parameter.Value is PointsSetComplexParameter paramComplex)
+                {
+                    // Real part slider
+                    var sliderReal = CreateSlider((parameter.Key, "a"), paramComplex.MinValue.Real, paramComplex.MaxValue.Real);
+                    // Imaginary part slider
+                    var sliderImaginary = CreateSlider((parameter.Key, "b"), paramComplex.MinValue.Imaginary, paramComplex.MaxValue.Imaginary);
+
+                    MenuParamPanel.Children.Add(sliderReal);
+                    MenuParamPanel.Children.Add(sliderImaginary);
+                    menuPanelControlCount += 2;
+                }
+                else if (parameter.Value is PointsSetDoubleParameter paramDouble)
+                {
+                    var slider = CreateSlider((parameter.Key, ""), paramDouble.MinValue, paramDouble.MaxValue);
+
+                    MenuParamPanel.Children.Add(slider);
+                    menuPanelControlCount += 1;
+                }
+            }
+
+            PointsSet.SetWorker((IPointsSetWorker)worker);
         }
-#pragma warning restore IDE0060, CA1801 // Supprimer le paramètre inutilisé
+
+        private Slider CreateSlider((string, string) tag, double min, double max)
+        {
+            double value = (min + max) / 2;
+            var slider = new Slider
+            {
+                Header = tag.Item1 + " " + tag.Item2 + ": " + value.ToString("G", CultureInfo.InvariantCulture),
+                Minimum = min,
+                Maximum = max,
+                StepFrequency = 0.01,
+                Value = value,
+                Tag = tag
+            };
+
+            slider.ValueChanged += ParameterSlider_ValueChanged;
+
+            return slider;
+        }
+
+        private void ParameterSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        {
+            var slider = (Slider)sender;
+            var worker = (PointsSetWorker)PointsSetsList.SelectedValue;
+            var (key, part) = ((string, string))slider.Tag;
+            var parameter = worker.Parameters[key];
+
+            slider.Header = key + " " + part + ": " + e.NewValue.ToString("G", CultureInfo.InvariantCulture);
+            if (parameter is PointsSetComplexParameter paramComplex)
+            {
+                // Need to modify the full 
+                if (part == "a") paramComplex.RealValue = e.NewValue;
+                else if (part == "b") paramComplex.ImaginaryValue = e.NewValue;
+            }
+            else if (parameter is PointsSetDoubleParameter paramDouble) paramDouble.Value = e.NewValue;
+        }
     }
+#pragma warning restore IDE0060, CA1801 // Supprimer le paramètre inutilisé
 }

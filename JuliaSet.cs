@@ -1,37 +1,25 @@
-﻿using CatsControls;
+﻿using System.Numerics;
+using System.ComponentModel;
+using CatsControls.PointsSet;
+
 
 namespace Catsfract
 {
     /// <summary>
     /// Implement the points set worker for a Julia set using the specific seed (real, imaginary)
     /// </summary>
-    class JuliaSet : PointsSet, IPointsSet
+    class JuliaSet : PointsSetWorker, IPointsSetWorker
     {
-        // Backing store for the seed as independant double to optimize calculation
-        private double _sa, _sb;
-
         /// <summary>
         /// Create the Julia set, with the seed and with min and max threshold for calculation
         /// </summary>
         /// <param name="minThreshold">Minimum value of Threshold</param>
         /// <param name="maxThreshold">Maximum value of Threshold</param>
-        /// <param name="seed">The complex seed used for the Julia set</param>
-        public JuliaSet(int minThreshold, int maxThreshold, (double, double) seed) : base(minThreshold, maxThreshold)
+        public JuliaSet(int minThreshold, int maxThreshold) : base(minThreshold, maxThreshold) 
         {
-            //Store the seed as independant double to optimize calculation
-            (_sa, _sb) = seed;
-        }
-
-        /// <summary>
-        /// The complex seed used for the Julia set. Must be provided as a tuple of double to optimize calculation.  
-        /// </summary>
-        public (double, double) Seed
-        {
-            get => (_sa, _sb);
-            set
-            {
-                (_sa, _sb) = value;
-            }
+            var parameter = new PointsSetComplexParameter(new Complex(-2, -2), new Complex(2, 2));
+            // Add parameter
+            _parameters.Add("Seed", parameter);
         }
 
         /// <summary>
@@ -40,12 +28,14 @@ namespace Catsfract
         /// <param name="ca">Real part of the point</param>
         /// <param name="cb">Imaginary part of the point</param>
         /// <returns>Value for the point</returns>
-        public int PointSetWorker(double ca, double cb)
+        public int PointsSetWorker(double ca, double cb)
         {
             int n = 0;
             double za = ca;
             double zb = cb;
             double zasq, zbsq, magnsq;
+            double sa = ((PointsSetComplexParameter)_parameters["Seed"]).RealValue;
+            double sb = ((PointsSetComplexParameter)_parameters["Seed"]).ImaginaryValue;
 
             while (n < _threshold)
             {
@@ -54,8 +44,8 @@ namespace Catsfract
 
                 // Julia set : For each Z in the complex plan, Zn+1 = Zn² + Seed 
                 // new za must be calculated after new zb, as new zb is calculated from za
-                zb = 2 * za * zb + _sb;
-                za = zasq - zbsq + _sa;
+                zb = 2 * za * zb + sb;
+                za = zasq - zbsq + sa;
 
                 // new z magnitude squared
                 magnsq = za * za + zb * zb;

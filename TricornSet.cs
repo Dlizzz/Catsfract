@@ -1,11 +1,11 @@
-﻿using CatsControls;
+﻿using CatsControls.PointsSet;
 
 namespace Catsfract
 {
     /// <summary>
     /// Implement the points set worker for a Tricorn set
     /// </summary>
-    class TricornSet : PointsSet, IPointsSet 
+    class TricornSet : PointsSetWorker, IPointsSetWorker 
     {
         /// <summary>
         /// Create the Tricornbrot set
@@ -20,7 +20,7 @@ namespace Catsfract
         /// <param name="ca">Real part of the point</param>
         /// <param name="cb">Imaginary part of the point</param>
         /// <returns>Value for the point</returns>
-        public int PointSetWorker(double ca, double cb)
+        public int PointsSetWorker(double ca, double cb)
         {
             int n = 0;
             double za = 0;
