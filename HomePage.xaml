@@ -25,11 +25,13 @@
             <FadeOutThemeAnimation Storyboard.TargetName="ShadowMenuBar" />
         </Storyboard>
         <local:BooleanToVisibility x:Key="ConverterBooleanToVisibility" />
+        <DataTemplate x:Key="HeaderTemplate">
+            <TextBlock Text="{Binding}" FontWeight="Bold"/>
+        </DataTemplate>
         <Style TargetType="Slider">
             <Setter Property="ManipulationMode" Value="System"/>
             <Setter Property="TickPlacement" Value="None"/>
             <Setter Property="Foreground" Value="{ThemeResource AppBarItemForegroundThemeBrush}"/>
-            <Setter Property="FontWeight" Value="Bold"/>
         </Style>
     </Page.Resources>
 
@@ -48,9 +50,6 @@
                 Padding="5,5,5,5"
                 Background="{ThemeResource AppBarBackgroundThemeBrush}"
                 Spacing="5">
-                <TextBlock
-                    Text="Color map"
-                    FontWeight="Bold"/>
                 <ComboBox
                     x:Name="ColorMapsList"
                     HorizontalAlignment="Stretch"
@@ -60,10 +59,9 @@
                     ItemsSource="{x:Bind colormap:NamedColorMaps.ColorMaps}"
                     SelectedIndex="0"
                     SelectedValuePath="Value"
-                    SelectionChanged="ColorMapsList_SelectionChanged" />
-                <TextBlock
-                    FontWeight="Bold"
-                    Text="Fractal set" />
+                    SelectionChanged="ColorMapsList_SelectionChanged" 
+                    Header="Color map"
+                    HeaderTemplate="{StaticResource HeaderTemplate}"/>
                 <ComboBox
                     x:Name="PointsSetsList"
                     HorizontalAlignment="Stretch"
@@ -73,7 +71,9 @@
                     ItemsSource="{x:Bind PointsSets}"
                     SelectedIndex="0"
                     SelectedValuePath="Value"
-                    SelectionChanged="PointsSetsList_SelectionChanged" />
+                    SelectionChanged="PointsSetsList_SelectionChanged" 
+                    Header="Fractal set"
+                    HeaderTemplate="{StaticResource HeaderTemplate}"/>
             </StackPanel>
         </SplitView.Pane>
         <SplitView.Content>

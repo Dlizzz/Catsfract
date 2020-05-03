@@ -16,8 +16,8 @@ namespace Catsfract
         public GeneralizedMandelbrotSet(int minThreshold, int maxThreshold) : base(minThreshold, maxThreshold) 
         {
             // Add parameters
-            var parameterRoot = new PointsSetComplexParameter(new Complex(-2, -2), new Complex(2, 2));
-            var parameterPower = new PointsSetDoubleParameter(1, 3);
+            var parameterRoot = new PointsSetComplexParameter(new Complex(-2, -2), new Complex(2, 2), new Complex(0,0));
+            var parameterPower = new PointsSetComplexParameter(new Complex(-10, -10), new Complex(10, 10), new Complex(2, 0));
             _parameters.Add("Root", parameterRoot);
             _parameters.Add("Power", parameterPower);
         }
@@ -31,18 +31,15 @@ namespace Catsfract
         public int PointsSetWorker(double ca, double cb)
         {
             int n = 0;
-            double power = ((PointsSetDoubleParameter)_parameters["Power"]).Value;
             Complex c = new Complex(ca, cb);
-            Complex zn = new Complex(
-                ((PointsSetComplexParameter)_parameters["Root"]).RealValue,
-                ((PointsSetComplexParameter)_parameters["Root"]).ImaginaryValue);
-            Complex zn1;
+            Complex zn = ((PointsSetComplexParameter)_parameters["Root"]).Value;
+            Complex power = ((PointsSetComplexParameter)_parameters["Power"]).Value;
 
             while (n < _threshold)
             {
-                zn1 = Complex.Pow(zn, power) + c;
+                zn = Complex.Pow(zn, power) + c;
 
-                if (zn1.Magnitude > 2) break;
+                if (zn.Magnitude > 2) break;
 
                 n++;
             }

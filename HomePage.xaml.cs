@@ -140,7 +140,29 @@ namespace Catsfract
             else view.TryEnterFullScreenMode();
         }
 
-        private void Reset_Click(object sender, RoutedEventArgs e) => PointsSet.Reset();
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            PointsSet.RenderEnabled = false;
+            
+            var worker = (PointsSetWorker)PointsSetsList.SelectedValue;
+            foreach (Control control in MenuParamPanel.Children)
+            {
+                if (control is Slider slider && slider.Name != "ResolutionSlider")
+                {
+                    var (key, part) = ((string, string))slider.Tag;
+                    var parameter = worker.Parameters[key];
+                    if (parameter is PointsSetComplexParameter paramComplex)
+                    {
+                        if (part == "a") slider.Value = paramComplex.Default.Real;
+                        else if (part == "b") slider.Value = paramComplex.Default.Imaginary;
+                    }
+                    else if (parameter is PointsSetDoubleParameter paramDouble) slider.Value = paramDouble.Default;
+                }
+            }
+            
+            PointsSet.RenderEnabled = true;
+            PointsSet.Reset();
+        }
 
         private void PointsSetsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -195,9 +217,9 @@ namespace Catsfract
                 if (parameter.Value is PointsSetComplexParameter paramComplex)
                 {
                     // Real part slider
-                    var sliderReal = CreateSlider((parameter.Key, "a"), paramComplex.MinValue.Real, paramComplex.MaxValue.Real);
+                    var sliderReal = CreateSlider((parameter.Key, "a"), paramComplex.Minimum.Real, paramComplex.Maximum.Real, paramComplex.Default.Real);
                     // Imaginary part slider
-                    var sliderImaginary = CreateSlider((parameter.Key, "b"), paramComplex.MinValue.Imaginary, paramComplex.MaxValue.Imaginary);
+                    var sliderImaginary = CreateSlider((parameter.Key, "b"), paramComplex.Minimum.Imaginary, paramComplex.Maximum.Imaginary, paramComplex.Default.Imaginary);
 
                     MenuParamPanel.Children.Add(sliderReal);
                     MenuParamPanel.Children.Add(sliderImaginary);
@@ -205,7 +227,7 @@ namespace Catsfract
                 }
                 else if (parameter.Value is PointsSetDoubleParameter paramDouble)
                 {
-                    var slider = CreateSlider((parameter.Key, ""), paramDouble.MinValue, paramDouble.MaxValue);
+                    var slider = CreateSlider((parameter.Key, ""), paramDouble.Minimum, paramDouble.Maximum, paramDouble.Default);
 
                     MenuParamPanel.Children.Add(slider);
                     menuPanelControlCount += 1;
@@ -215,11 +237,11 @@ namespace Catsfract
             PointsSet.SetWorker((IPointsSetWorker)worker);
         }
 
-        private Slider CreateSlider((string, string) tag, double min, double max)
+        private Slider CreateSlider((string, string) tag, double min, double max, double value)
         {
-            double value = (min + max) / 2;
             var slider = new Slider
             {
+                Name = "Param" + tag.Item1, 
                 Header = tag.Item1 + " " + tag.Item2 + ": " + value.ToString("G", CultureInfo.InvariantCulture),
                 Minimum = min,
                 Maximum = max,
@@ -244,8 +266,8 @@ namespace Catsfract
             if (parameter is PointsSetComplexParameter paramComplex)
             {
                 // Need to modify the full 
-                if (part == "a") paramComplex.RealValue = e.NewValue;
-                else if (part == "b") paramComplex.ImaginaryValue = e.NewValue;
+                if (part == "a") paramComplex.Real = e.NewValue;
+                else if (part == "b") paramComplex.Imaginary = e.NewValue;
             }
             else if (parameter is PointsSetDoubleParameter paramDouble) paramDouble.Value = e.NewValue;
         }

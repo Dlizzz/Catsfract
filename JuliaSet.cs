@@ -17,7 +17,7 @@ namespace Catsfract
         /// <param name="maxThreshold">Maximum value of Threshold</param>
         public JuliaSet(int minThreshold, int maxThreshold) : base(minThreshold, maxThreshold) 
         {
-            var parameter = new PointsSetComplexParameter(new Complex(-2, -2), new Complex(2, 2));
+            var parameter = new PointsSetComplexParameter(new Complex(-2, -2), new Complex(2, 2), new Complex(0,0));
             // Add parameter
             _parameters.Add("Seed", parameter);
         }
@@ -34,8 +34,8 @@ namespace Catsfract
             double za = ca;
             double zb = cb;
             double zasq, zbsq, magnsq;
-            double sa = ((PointsSetComplexParameter)_parameters["Seed"]).RealValue;
-            double sb = ((PointsSetComplexParameter)_parameters["Seed"]).ImaginaryValue;
+            double sa = ((PointsSetComplexParameter)_parameters["Seed"]).Real;
+            double sb = ((PointsSetComplexParameter)_parameters["Seed"]).Imaginary;
 
             while (n < _threshold)
             {
