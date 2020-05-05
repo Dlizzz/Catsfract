@@ -6,32 +6,16 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Data;
 using Windows.UI.ViewManagement;
 using Windows.UI.Input;
 using Windows.UI.Core;
-using Windows.UI.Text;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.ApplicationModel.Resources;
 using CatsHelpers.ColorMaps;
 using CatsControls.PointsSet;
-using System.Numerics;
 
 namespace Catsfract
 {
-    public class BooleanToVisibility : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, string language)
-        {
-            return (bool)value ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, string language)
-        {
-            return (Visibility)value == Visibility.Visible;
-        }
-    }
-
     /// <summary>
     /// Main page of the application, used as the starting point
     /// </summary>
@@ -39,9 +23,6 @@ namespace Catsfract
     {
         private static readonly ResourceLoader resourceLoader = ResourceLoader.GetForCurrentView("Resources");
 
-        private DispatcherTimer menuBarTimer;
-        private bool menuBarIsVisible;
-        private bool pointerOverMenuBar = false;
         private CoreCursor currentCursor;
         private readonly CoreCursor waitCursor = new CoreCursor(CoreCursorType.Wait, 0);
         private int menuPanelControlCount = 0;
@@ -63,52 +44,13 @@ namespace Catsfract
 #pragma warning disable IDE0060, CA1801 // Supprimer le paramètre inutilisé
         private void PointsSet_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs e)
         {
-            // MenuBar timer
-            menuBarTimer = new DispatcherTimer();
-            menuBarTimer.Tick += MenuBarTimer_Tick;
-            menuBarTimer.Interval = new TimeSpan(0, 0, 3);
-
             // Initialization
-            menuBarIsVisible = true;
             PointsSet.SetColorMap((ColorMap)ColorMapsList.SelectedValue);
             SetWorker((PointsSetWorker)PointsSetsList.SelectedValue);
-            menuBarTimer?.Start();
-        }
-
-        private void MenuBarTimer_Tick(object sender, object e)
-        {
-            if (menuBarIsVisible && !pointerOverMenuBar)
-            {
-                menuBarIsVisible = false;
-                HideMenuBarStoryboard.Begin();
-            }
-        }
-
-        private void PagHome_Unloaded(object sender, RoutedEventArgs e)
-        {
-            if (menuBarTimer.IsEnabled) menuBarTimer.Stop();
-        }
-
-        private void PagHome_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            if (!menuBarIsVisible)
-            {
-                menuBarIsVisible = true;
-                ShowMenuBarStoryboard.Begin();
-                menuBarTimer?.Start();
-            }
         }
 
         private void PagHome_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
-            if (!menuBarIsVisible)
-            {
-                if (menuBarTimer.IsEnabled) menuBarTimer.Stop();
-                menuBarIsVisible = true;
-                ShowMenuBarStoryboard.Begin();
-                menuBarTimer?.Start();
-            }
-
             if (BorderValues.Visibility == Visibility.Visible)
             {
                 PointerPoint pointerPoint = e.GetCurrentPoint(PointsSet);
@@ -145,7 +87,7 @@ namespace Catsfract
             PointsSet.RenderEnabled = false;
             
             var worker = (PointsSetWorker)PointsSetsList.SelectedValue;
-            foreach (Control control in MenuParamPanel.Children)
+            foreach (UIElement control in MenuParamPanel.Children)
             {
                 if (control is Slider slider && slider.Name != "ResolutionSlider")
                 {
@@ -175,17 +117,6 @@ namespace Catsfract
 
             PointsSet.SetColorMap(colorMap);
         }
-
-        private void MenuBar_Loaded(object sender, RoutedEventArgs e)
-        {
-            DropShadowMask.Width = MenuBar.ActualWidth;
-            DropShadowMask.Height = MenuBar.ActualHeight;
-            MenuBar.MinWidth = MenuBar.ActualWidth;
-        }
-
-        private void ShadowMenuBar_PointerEntered(object sender, PointerRoutedEventArgs e) => pointerOverMenuBar = true;
-
-        private void ShadowMenuBar_PointerExited(object sender, PointerRoutedEventArgs e) => pointerOverMenuBar = false;
 
         private void PointsSet_Rendered(object sender, RenderEventArgs e)
         {

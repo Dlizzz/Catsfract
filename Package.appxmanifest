@@ -1,46 +1,33 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-
-<Package
-  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
-  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
-  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  IgnorableNamespaces="uap mp">
-
-  <Identity
-    Name="019ef2f9-34fa-4d9c-8bee-e81803096da1"
-    Publisher="CN=DLA19005"
-    Version="1.0.0.0" />
-
-  <mp:PhoneIdentity PhoneProductId="019ef2f9-34fa-4d9c-8bee-e81803096da1" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
-
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
+  <Identity Name="019ef2f9-34fa-4d9c-8bee-e81803096da1" Publisher="CN=Cats Cie" Version="1.0.0.0" />
+  <mp:PhoneIdentity PhoneProductId="019ef2f9-34fa-4d9c-8bee-e81803096da1" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>Catsfract</DisplayName>
-    <PublisherDisplayName>Denis Lambolez</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.png</Logo>
+    <PublisherDisplayName>Cats Cie</PublisherDisplayName>
+    <Logo>Assets\Logos\StoreLogo.png</Logo>
   </Properties>
-
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
   </Dependencies>
-
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="x-generate" />
   </Resources>
-
   <Applications>
-    <Application Id="App"
-      Executable="$targetnametoken$.exe"
-      EntryPoint="Catsfract.App">
-      <uap:VisualElements
-        DisplayName="Catsfract"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Description="Calculate and display fractal images."
-        BackgroundColor="transparent" Square44x44Logo="Assets\Icon.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square310x310Logo="Assets\LargeTile.png" Square71x71Logo="Assets\SmallTile.png">
-        </uap:DefaultTile >
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="Catsfract.App">
+      <uap:VisualElements DisplayName="Catsfract" Square150x150Logo="Assets\Tiles\Square150x150Logo.png" Description="Calculate, display amn manipulate fractal sets" BackgroundColor="transparent" Square44x44Logo="Assets\Icons\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Tiles\Wide310x150Logo.png" Square310x310Logo="Assets\Tiles\Square310x310Logo.png" Square71x71Logo="Assets\Tiles\Square71x71Logo.png" ShortName="Catsfract">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+            <uap:ShowOn Tile="square310x310Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
         <uap:InitialRotationPreference>
-          <uap:Rotation Preference="landscape"/></uap:InitialRotationPreference>
-        <uap:LockScreen BadgeLogo="Assets\BadgeLogo.png" Notification="badge"/>
+          <uap:Rotation Preference="landscape" />
+        </uap:InitialRotationPreference>
+        <uap:LockScreen BadgeLogo="Assets\Logos\BadgeLogo.png" Notification="badge" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png"/>
       </uap:VisualElements>
     </Application>
   </Applications>

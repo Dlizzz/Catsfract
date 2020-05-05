@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 // l'ensemble d'attributs suivant. Changez les valeurs de ces attributs pour modifier les informations
 // associées à un assembly.
 [assembly: AssemblyTitle("Catsfract")]
-[assembly: AssemblyDescription("A UWP / C# application to draw factals")]
+[assembly: AssemblyDescription("A UWP / C# application to draw fractals")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Cats Cie")]
 [assembly: AssemblyProduct("Catsfract")]
